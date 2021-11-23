@@ -1,4 +1,4 @@
-module amirkdv/piledown
+module amirkdv/codex
 
 go 1.17
 
