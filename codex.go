@@ -7,6 +7,7 @@ import (
     "os/exec"
     "syscall"
     "time"
+    "sync"
     "bytes"
     "crypto/md5"
     "encoding/hex"
@@ -30,45 +31,46 @@ func getMtime(path string) (time.Time, error) {
     return mtime, nil
 }
 
-
-func ConvertToHtmlDoc(path string) (*goquery.Document, error) {
+func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) error {
+    defer wg.Done()
     mtime, err := getMtime(path)
     if err != nil {
-        return nil, err
+        return err
     }
 
     cmd := exec.Command("pandoc", "-t", "html", path)
 
     stdout, err := cmd.StdoutPipe()
     if err != nil {
-        return nil, err
+        return err
     }
 
     err = cmd.Start()
     if err != nil {
-        return nil, err
+        return err
     }
 
-    doc, err := goquery.NewDocumentFromReader(stdout)
+    doc_, err := goquery.NewDocumentFromReader(stdout)
     if (err != nil) {
-        return nil, err
+        return err
     }
+    // TODO revisit
+    *doc = *doc_
 
     err = cmd.Wait()
     if err != nil {
-        return nil, err
+        return err
     }
-
 
     Unflatten(doc.Find("body").First(), HeadSelectors[:])
 
+    // TODO use source/mtime in FE
     doc.Find(".node").Each(func(i int, sel *goquery.Selection) {
-
-        sel.SetAttr("codex-source", path)
+        sel.SetAttr("codex-source", path) // TODO deal with long paths
         sel.SetAttr("codex-mtime", mtime.Format(time.RFC3339)) // iso 8601, JS: new Date("2021-11-20T00:36:20-05:00").toLocaleString()
     })
 
-    return doc, nil
+    return nil
 }
 
 func dir(value interface{}) {
@@ -154,7 +156,7 @@ func LoadDoc(path string) (*goquery.Document, error) {
 }
 
 
-func BuildOutput(docs []*goquery.Document) (*goquery.Document, error) {
+func BuildOutput(docs []goquery.Document) (*goquery.Document, error) {
     outDoc, err := LoadDoc(OutputTemplatePath)
     if err != nil {
         return nil, err
@@ -174,14 +176,15 @@ func BuildOutput(docs []*goquery.Document) (*goquery.Document, error) {
 }
 
 func render(paths []string) (string, error) {
-    docs := make([]*goquery.Document, len(paths))
+    docs := make([]goquery.Document, len(paths))
+    wg := sync.WaitGroup{}
+    wg.Add(len(paths))
     for idx, path := range paths {
-        doc, err := ConvertToHtmlDoc(path)
-        if err != nil {
-            return "", err
-        }
-        docs[idx] = doc
+        // TODO errors?
+        go ConvertToHtmlDoc(path, &docs[idx], &wg)
     }
+    wg.Wait()
+
     output, err := BuildOutput(docs)
     if err != nil {
         return "", err
