@@ -10,16 +10,7 @@ body {
   font-size: 16px;
 }
 
-/* pandoc puts document title in a <header> tag */
-header {
-  display: none;
-}
-
-/* FIXME stale? */
-#codex-root:has(nav.collapsed) {
-  color: red;
-}
-
+/******** Search ********/
 #search-input {
   position: fixed;
   left: 1em;
@@ -39,295 +30,7 @@ header {
   padding-left: 0.3rem;
 }
 
-
-a:not(.sourceLine), a:not(.sourceLine):visited {
-  color: #188268;
-  text-decoration-thickness: 3px;
-  text-decoration-color: #d4f7ef;
-}
-
-a:not(.sourceLine):hover {
-  text-decoration-color: #a9efde;
-}
-
-a.external-link::after {
-  content: "↗";
-  font-size: .7em;
-}
-
-ul.task-list {
-  padding-left: 0.2em;
-}
-/* note: pandoc sets list-style to "none" (no bullet) for us, we remove the
- * checkbox input and add our own styling */
-ul.task-list > li::before {
-  content: '□';
-}
-ul.task-list li.done::before {
-  content: '☑';
-  font-size: 1.2em;
-}
-ul.task-list > li li {
-  margin-left: .6em;
-}
-
-code, pre {
-  font-size: 0.75rem;
-  background: #f5f5fa;
-  border-radius: 5px;
-}
-
-code span.co {
-  /* comments */
-  color: #7f888a;
-}
-code span.al {
-  /* things like BUG, NOTE, HACK, etc */
-  color: #e8854a;
-}
-
-code {
-  padding: 2px 6px;
-  white-space: pre; /* or else horizontally wide <pre> <code> breaks */
-}
-pre > code {
-  /* pandoc weirdly puts all contents of <pre> inside a <code>, we don't want an
-   * extra padding there, otherwise only first line appears indented. */
-  padding: 2px 0px;
-}
-.fold-control {
-  text-align: right;
-  margin-top: 1em;
-  margin-bottom: -2.2em;
-  margin-right: 10px;
-  cursor: pointer;
-  color: #bbb;
-  font-size: .875rem;
-}
-pre.collapsed, blockquote.collapsed {
-  height: 3em;
-  overflow-y: scroll;
-}
-.fold-control.collapsed > .pre-collapse,
-.fold-control:not(.collapsed) > .pre-expand {
-  display: none;
-}
-
-/* pre and blockquote styling interacts with fold-control */
-blockquote {
-  width: 95%;
-  padding: .4em 1.4em;
-}
-
-pre {
-  padding: 1.4em 1.4em;
-  overflow: auto;
-}
-
-blockquote {
-  background: #fafafa;
-  margin-left: auto;
-  border-left: 3px solid #bbb;
-  border-radius: 5px;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  color: #444;
-}
-
-.node {
-  padding: 5px 25px 5px 10px;
-  border-right: 1px solid #e3e3e3;
-  border-left: 1px solid #e3e3e3;
-  margin-bottom: 2px;
-  border-radius: 5px;
-  position: relative;
-}
-
-/* lighter colors for deeper nodes */
-.node.node-depth-3 {
-  border-color: #f5f5f5;
-}
-
-.node-head:hover {
-  background: #fafafa;
-  cursor: pointer;
-}
-.node-head > li:hover {
-  cursor: auto !important;
-}
-
-.node-head {
-  padding-left: 10px;
-  padding-bottom: 1px;
-  position: relative;
-  border-radius: 5px;
-}
-
-.node-head .collapse-expand-children {
-  position: absolute;
-  right: 5px;
-  top: 2px;
-  color: #888;
-}
-.node-head li + .collapse-expand-children {
-  display: none;
-}
-
-.node.collapsed > .node-body {
-  display: none;
-}
-
-.node-body {
-  padding-left: 12px;
-}
-
-.node-body > ul {
-  padding-left: 0em;
-}
-
-
-.node.collapsed .node-body {
-  display: none;
-}
-
-.d-none {
-  display: none;
-}
-
-.node.node-depth-1 { margin-left: 15px; }
-.node.node-depth-2 { margin-left: 18px; }
-.node.node-depth-3 { margin-left: 21px; }
-.node.node-depth-4 { margin-left: 24px; }
-
-#expand-collapse-all-controls {
-  font-size: 1.4em;
-  color: #3d3d3d;
-  text-align: center;
-}
-
-#expand-collapse-all-controls span {
-  cursor: pointer;
-  color: #3d3d3d;
-}
-
-span#show-all-nodes,
-span#auto-reload {
-  color: #aaa;
-  font-size: .8em;
-}
-
-span#show-all-nodes.enabled,
-span#auto-reload.enabled {
-  color: #e51f76;
-}
-
-/* FIXME REVISIT after search */
-/* pandoc-produced TOC, turn it into a sidebar */
-nav {
-  position: fixed;
-  left: 0em;
-  top: 0em;
-  padding-top: 1em;
-  padding-left: .2em;
-  padding-right: .2em;
-  overflow: scroll;
-  border-right: 1px solid #ddd;
-  height: 100%;
-  background-color: #f7f7f7;
-  width: 15em;
-  transition: all .2s linear;
-  z-index: 2;
-}
-nav ul {
-  list-style-type: none;
-}
-/* custom styling for "active" link (current location) */
-nav li.focus > a, #navTOC li.focus > a:visited {
-  color: #e51f76;
-}
-
-nav ul {
-  padding-left: 1em;
-}
-
-nav li > .focus-indicator {
-  display: none;
-}
-
-nav li.focus > .focus-indicator {
-  display: inline;
-  margin-left: .5em;
-  font-size: .7em;
-  color: #476f87;
-}
-
-nav {
-  cursor: pointer;
-}
-nav.collapsed {
-  min-width: 4em;
-  width: 4em;
-}
-nav.collapsed ul {
-  display: none;
-}
-nav #nav-controls {
-  font-size: 1.8em;
-  margin-left: 40%;
-}
-nav.collapsed #nav-controls span {
-  display: block;
-}
-
-#spinner {
-  position: fixed;
-  top: -2em;
-  right: 40%;
-  width: 10%;
-}
-#spinner img {
-  opacity: 0;
-  width: 100%;
-  transition: opacity .3s linear;
-}
-#spinner.enabled img {
-  opacity: 1;
-}
-
-.full-screen-button {
-  display: none;
-
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  padding: 0 2px;
-
-  background-color: #eafbf7;
-  color: #777;
-
-  border-radius: 2px;
-  cursor: pointer;
-}
-
-.node.highlight > .full-screen-button {
-  display: block;
-}
-
-/* FIXME revisit full screen in absence of #codex-root*/
-body.full-screen .node {
-  filter: blur(.4em);
-}
-#full-screen-modal .node {
-  filter: none;
-}
-
-#codex-root.full-screen nav {
-  visibility: hidden;
-  opacity: 0;
-  transition: visibility 0.5s, opacity 0.5s linear;
-}
-
+/****** Full screen *****/
 #full-screen-modal {
   position: fixed;
   top: 10%;
@@ -350,13 +53,154 @@ body.full-screen .node {
 #full-screen-modal .full-screen-button {
   display: none;
 }
-
 #full-screen-modal.inactive {
   visibility: hidden;
   opacity: 0;
   transition: visibility 0.5s, opacity 0.5s linear;
 }
+.full-screen-button {
+  display: none;
 
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  padding: 0 2px;
+
+  background-color: #eafbf7;
+  color: #777;
+
+  border-radius: 2px;
+  cursor: pointer;
+}
+.node.highlight > .full-screen-button {
+  display: block;
+}
+body.full-screen .node {
+  filter: blur(.4em);
+}
+#full-screen-modal .node {
+  filter: none;
+}
+
+/****** Links *****/
+a:not(.sourceLine), a:not(.sourceLine):visited {
+  color: #188268;
+  text-decoration-thickness: 3px;
+  text-decoration-color: #d4f7ef;
+}
+
+a:not(.sourceLine):hover {
+  text-decoration-color: #a9efde;
+}
+
+a.external-link::after {
+  content: "↗";
+  font-size: .7em;
+}
+
+/****** Lists *******/
+ul.task-list {
+  padding-left: 0.2em;
+}
+/* pandoc sets list-style to "none" (no bullet) for us
+ * remove the checkbox input and add our own styling */
+ul.task-list > li::before {
+  content: '□';
+}
+ul.task-list li.done::before {
+  content: '☑';
+  font-size: 1.2em;
+}
+ul.task-list > li li {
+  margin-left: .6em;
+}
+
+/***** Code blocks *****/
+code, pre {
+  font-size: 0.75rem;
+  background: #f5f5fa;
+  border-radius: 5px;
+}
+pre {
+  padding: 1.4em 1.4em;
+  overflow: auto;
+}
+code {
+  padding: 2px 6px;
+  white-space: pre; /* or else horizontally wide <pre> <code> breaks */
+}
+pre > code {
+  /* pandoc weirdly puts all contents of <pre> inside a <code>, we don't want an
+   * extra padding there, otherwise only first line appears indented. */
+  padding: 2px 0px;
+}
+blockquote {
+  background: #fafafa;
+  margin-left: auto;
+  border-left: 3px solid #bbb;
+  border-radius: 5px;
+}
+
+
+/****** Nodes ******/
+.node {
+  position: relative;
+
+  margin-bottom: 2px;
+  padding: 5px 25px 5px 10px;
+
+  border-right: 1px solid #e3e3e3;
+  border-left: 1px solid #e3e3e3;
+  border-radius: 5px;
+}
+.node-head:hover {
+  background: #fafafa;
+  cursor: pointer;
+}
+.node-head > li:hover {
+  cursor: auto !important;
+}
+.node-head {
+  padding-left: 10px;
+  padding-bottom: 1px;
+  position: relative;
+  border-radius: 5px;
+}
+.node-body {
+  padding-left: 12px;
+}
+.node-body > ul {
+  padding-left: 0em;
+}
+.node.node-depth-1 { margin-left: 15px; }
+.node.node-depth-2 { margin-left: 18px; }
+.node.node-depth-3 { margin-left: 21px; }
+.node.node-depth-4 { margin-left: 24px; }
+
+.node.collapsed .node-body {
+  display: none;
+}
+.d-none {
+  display: none;
+}
+
+/**** Auto-reload ****/
+#spinner {
+  position: fixed;
+  top: -2em;
+  right: 40%;
+  width: 10%;
+}
+#spinner img {
+  opacity: 0;
+  width: 100%;
+  transition: opacity .3s linear;
+}
+#spinner.enabled img {
+  opacity: 1;
+}
+
+/******** Tables ******/
 th, tr, td {
     border: 1px solid #ddd;
 }
