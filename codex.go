@@ -109,6 +109,11 @@ func Unflatten(root *goquery.Selection, selectors []string) {
             body = head.NextUntilNodes(heads.Get(i + 1))
         }
 
+        if body.Length() == 0 {
+            head.AfterHtml("<div> </div>")
+            body = head.Next()
+        }
+
         depth := len(HeadSelectors) - len(selectors)
         if head.Is("li") {
             node = head
