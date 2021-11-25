@@ -64,10 +64,10 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
 
     Unflatten(doc.Find("body").First(), HeadSelectors[:])
 
-    // TODO use source/mtime in FE
     doc.Find(".node").Each(func(i int, sel *goquery.Selection) {
-        sel.SetAttr("codex-source", path) // TODO deal with long paths
-        sel.SetAttr("codex-mtime", mtime.Format(time.RFC3339)) // iso 8601, JS: new Date("2021-11-20T00:36:20-05:00").toLocaleString()
+        sel.SetAttr("codex-source", path)
+        // render mtime in ISO 8601 (RFC 3339), compatible with JS Date().
+        sel.SetAttr("codex-mtime", mtime.Format(time.RFC3339))
     })
 
     return nil

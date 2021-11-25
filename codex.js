@@ -21,6 +21,7 @@ class Codex {
     });
 
     this.initSearch();
+    this.initFileLabels();
     this.initHighlighting();
     this.initHeadToggle();
     this.initFullScreen();
@@ -52,6 +53,15 @@ class Codex {
         $(`#${hit.ref}`).removeClass('d-none');
       }
     }));
+  }
+
+  initFileLabels() {
+    $('.node-depth-0').each((idx, elem) => {
+      const $elem = $(elem);
+      const fname = $elem.attr("codex-source");
+      const mtime = (new Date($elem.attr("codex-mtime"))).toLocaleString();
+      $elem.prepend(`<div class="source-file-label"> ${fname} (last updated: ${mtime}) </div>`);
+    });
   }
 
   initHighlighting() {
