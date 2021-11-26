@@ -61,7 +61,7 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
         return err
     }
 
-    Unflatten(doc.Find("body").First(), HeadSelectors[:])
+    Unflatten(doc.Find("body").First(), HeadSelectors[:], 0)
 
     doc.Find(".node").Each(func(i int, sel *goquery.Selection) {
         sel.SetAttr("codex-source", path)
@@ -73,8 +73,8 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
 }
 
 
-
-func Unflatten(root *goquery.Selection, selectors []string) {
+// TODO error handling
+func Unflatten(root *goquery.Selection, selectors []string, depth int) {
     if len(selectors) == 0 {
         return
     }
@@ -94,6 +94,7 @@ func Unflatten(root *goquery.Selection, selectors []string) {
         return
     }
 
+    // TODO dom children before the first head should get their own node!
     heads.Each(func(i int, head *goquery.Selection) {
         var body, node *goquery.Selection
         if i + 1 >= heads.Length() {
@@ -107,7 +108,6 @@ func Unflatten(root *goquery.Selection, selectors []string) {
             body = head.Next()
         }
 
-        depth := len(HeadSelectors) - len(selectors)
         if head.Is("li") {
             node = head
             node.SetAttr("class", fmt.Sprintf("node li-node node-depth-%d", depth))
@@ -120,7 +120,7 @@ func Unflatten(root *goquery.Selection, selectors []string) {
             node.PrependSelection(head.Parent())
             node.SetAttr("class", fmt.Sprintf("node node-depth-%d", depth))
 
-            Unflatten(body.Parent(), selectors[idx + 1:]) // <= recurse
+            Unflatten(body.Parent(), selectors[idx + 1:], depth + 1) // <= recurse
         }
 
         node.SetAttr("id", fmt.Sprintf("node-%s", ContentHash(node)))
