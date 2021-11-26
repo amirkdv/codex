@@ -147,7 +147,7 @@ pre {
 }
 code {
   padding: 2px 6px;
-  white-space: pre; /* or else horizontally wide <pre> <code> breaks */
+  white-space: normal;
 }
 pre > code {
   /* pandoc weirdly puts all contents of <pre> inside a <code>, we don't want an
