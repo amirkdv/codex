@@ -14,8 +14,6 @@ import (
     "github.com/PuerkitoBio/goquery"
 )
 
-import "reflect"
-
 
 var HeadSelectors = [...]string{"h1", "h2", "h3", "h4", "h5", "li:not(li li)"}
 const OutputTemplatePath = "index.html"
@@ -73,12 +71,6 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
     return nil
 }
 
-func dir(value interface{}) {
-    type_ := reflect.TypeOf(value)
-    for i := 0; i < type_.NumMethod(); i++ {
-        fmt.Println(type_.Method(i).Name)
-    }
-}
 
 
 func Unflatten(root *goquery.Selection, selectors []string) {
