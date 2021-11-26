@@ -10,6 +10,20 @@ body {
   font-size: 16px;
 }
 
+main {
+  margin-top: 5rem;
+}
+
+#top-bar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  padding: 1em;
+  background: white;
+  z-index: 10;
+}
+
 /****** File labels *****/
 .source-file-label {
   padding-left: 10px;
@@ -17,13 +31,10 @@ body {
 }
 
 /******** Search ********/
-#search-input {
-  position: fixed;
-  left: 1em;
-  top: 1em;
-}
-#search-input input {
+
+#top-bar #search-input {
   display: block;
+
   padding: 0.3rem;
 
   border: 1px solid #aaa;
@@ -31,19 +42,21 @@ body {
 
   font-size: 0.875rem;
 }
-#search-input label {
+#search-input + label {
   color: #666;
-  padding-left: 0.3rem;
+  padding-left: 0.1rem;
+  margin: auto;
+  font-size: 0.875rem;
 }
 
 /****** Full screen *****/
 #full-screen-modal {
   position: fixed;
-  top: 10%;
-  left: 15%;
+  top: 5rem;
+  left: 15vw;
 
-  width: 70%;
-  max-height: 80%;
+  width: 70vw;
+  max-height: 80vh
   padding: 1em;
 
   box-shadow: 1px 1px 5px 1px #ddd;
@@ -91,12 +104,13 @@ body.full-screen .node {
 /****** Links *****/
 a:not(.sourceLine), a:not(.sourceLine):visited {
   color: #188268;
-  text-decoration-thickness: 3px;
-  text-decoration-color: #d4f7ef;
+  text-decoration-thickness: 1px;
+  text-decoration-color: #d4eeff;
 }
 
 a:not(.sourceLine):hover {
-  text-decoration-color: #a9efde;
+  text-decoration-thickness: 3px;
+  text-decoration-color: #d4eeff;
 }
 
 a.external-link::after {
@@ -145,6 +159,7 @@ blockquote {
   margin-left: auto;
   border-left: 3px solid #bbb;
   border-radius: 5px;
+  padding: 0.1rem 0.5rem;
 }
 
 
@@ -152,7 +167,7 @@ blockquote {
 .node {
   position: relative;
 
-  margin-bottom: 2px;
+  margin-bottom: 1rem;
   padding: 5px 25px 5px 10px;
 
   border-right: 1px solid #e3e3e3;

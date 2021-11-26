@@ -43,7 +43,7 @@ class Codex {
     $('#search-input').on('keyup', debounce(200, event => {
       if (event.target.value == '') {
         $('.node').removeClass('d-none')
-        $('#search-input label').text('');
+        $('label[for="search-input"]').text('');
         return;
       }
       $('.node').addClass('d-none');
