@@ -13,11 +13,20 @@ func numLeadingSpaces(line string) int {
     return len(line) - len(strings.TrimLeft(line, " "))
 }
 
-// Deindent takes a multiline string and returns a modified version with the
-// same amount of leading spaces removed from all lines such that the first
-// non-empty line has zero indentation.
-func Deindent(content string) (string, error) {
-    content = strings.Trim(content, "\n")
+/* Unindent takes a multiline string and uniformly unindents all lines such that
+ * the first non-empty line has zero indentation. For example:
+ *
+ *    |\n
+ *    |     Hello
+ *    |       World
+ *
+ * becomes
+ *
+ *    |\n
+ *    |Hello
+ *    |  World
+ */
+func Unindent(content string) (string, error) {
     lines := strings.Split(content, "\n")
     nSpacesFirst := numLeadingSpaces(lines[0])
     for i, line := range lines {
@@ -36,11 +45,11 @@ func Deindent(content string) (string, error) {
 }
 
 // TempSourceFile returns the path to a temporary file with a unique name and
-// the requested extension, populated with the requested content. Contents are
-// passed through Deindent() before writing to file.
-// It crashes if it hits any errors.
+// the requested extension and contents, crashes if it hits any errors.
 //
-// It is the responsibility of the caller to delete the file after use.
+// Contents are passed through Unindent() before writing to file.
+//
+// It is the responsibility of caller to delete the file after use.
 func TempSourceFile(extension string, content string) string {
     // ioutil replaces the * in the pattern by a unique int at runtime
     fnamePattern := fmt.Sprintf("codex-temp*.%s", extension)
@@ -50,12 +59,12 @@ func TempSourceFile(extension string, content string) string {
         log.Fatal(err)
     }
 
-    deindented, err := Deindent(content)
+    unindented, err := Unindent(strings.Trim(content, "\n"))
     if err != nil {
         log.Fatal(err)
     }
 
-    if _, err := tmpfile.Write([]byte(deindented)); err != nil {
+    if _, err := tmpfile.Write([]byte(unindented)); err != nil {
         log.Fatal(err)
     }
     if err := tmpfile.Close(); err != nil {
