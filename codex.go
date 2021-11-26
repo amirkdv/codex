@@ -19,7 +19,7 @@ var HeadSelectors = [...]string{"h1", "h2", "h3", "h4", "h5", "li:not(li li)"}
 const OutputTemplatePath = "index.html"
 
 
-func getMtime(path string) (time.Time, error) {
+func Mtime(path string) (time.Time, error) {
     fileinfo, err := os.Stat(path)
     if err != nil {
         return time.Time{}, err
@@ -29,9 +29,10 @@ func getMtime(path string) (time.Time, error) {
     return mtime, nil
 }
 
+// FIXME this is pandoc + Unflatten, all the heavy lifting. Massively simplify
 func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) error {
     defer wg.Done()
-    mtime, err := getMtime(path)
+    mtime, err := Mtime(path)
     if err != nil {
         return err
     }
@@ -52,7 +53,6 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
     if (err != nil) {
         return err
     }
-    // TODO revisit
     *doc = *doc_
 
     err = cmd.Wait()
@@ -137,8 +137,7 @@ func ContentHash(node *goquery.Selection) string {
     return fmt.Sprintf("%s", contentId)
 }
 
-
-func LoadDoc(path string) (*goquery.Document, error) {
+func LoadAsHtmlDoc(path string) (*goquery.Document, error) {
     file, err := os.Open(path)
     defer file.Close()
     if err != nil {
@@ -154,7 +153,7 @@ func LoadDoc(path string) (*goquery.Document, error) {
 
 
 func BuildOutput(docs []goquery.Document) (*goquery.Document, error) {
-    outDoc, err := LoadDoc(OutputTemplatePath)
+    outDoc, err := LoadAsHtmlDoc(OutputTemplatePath)
     if err != nil {
         return nil, err
     }
@@ -172,22 +171,20 @@ func BuildOutput(docs []goquery.Document) (*goquery.Document, error) {
     return outDoc, nil
 }
 
-func render(paths []string) (string, error) {
+func render(paths []string) (*goquery.Document, error) {
     docs := make([]goquery.Document, len(paths))
-    wg := sync.WaitGroup{}
+    var wg sync.WaitGroup
     wg.Add(len(paths))
     for idx, path := range paths {
         // TODO errors?
         go ConvertToHtmlDoc(path, &docs[idx], &wg)
     }
     wg.Wait()
+    return BuildOutput(docs)
+}
 
-    output, err := BuildOutput(docs)
-    if err != nil {
-        return "", err
-    }
-
-    html, err := output.Html()
+func DocToHtml(doc *goquery.Document) (string, error) {
+    html, err := doc.Html()
     if err != nil {
         return "", err
     }
@@ -196,11 +193,16 @@ func render(paths []string) (string, error) {
 
 
 func main() {
+    // TODO argparse
     inputs := os.Args[1:]
     if len(inputs) == 0 {
         log.Fatal("Expected at least one argument")
     }
-    html, err := render(inputs)
+    doc, err := render(inputs)
+    if err != nil {
+        log.Fatal(err)
+    }
+    html, err := DocToHtml(doc)
     if err != nil {
         log.Fatal(err)
     }
