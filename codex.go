@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "os"
+    "errors"
     "os/exec"
     "syscall"
     "time"
@@ -17,7 +18,9 @@ import (
 
 
 var HeadSelectors = [...]string{"h1", "h2", "h3", "h4", "h5", "li:not(li li)"}
-const OutputTemplatePath = "index.html"
+
+
+const OutputTemplatePath = "static/index.html" // FIXME relpath, os.Executable()
 
 
 func Mtime(path string) (time.Time, error) {
@@ -138,6 +141,7 @@ func ContentHash(node *goquery.Selection) string {
     return fmt.Sprintf("%s", contentId)
 }
 
+// FIXME refactor io.Reader
 func LoadAsHtmlDoc(path string) (*goquery.Document, error) {
     file, err := os.Open(path)
     defer file.Close()
@@ -153,8 +157,8 @@ func LoadAsHtmlDoc(path string) (*goquery.Document, error) {
 }
 
 
-func BuildOutput(docs []goquery.Document) (*goquery.Document, error) {
-    outDoc, err := LoadAsHtmlDoc(OutputTemplatePath)
+func BuildOutput(tplPath string, docs []goquery.Document) (*goquery.Document, error) {
+    outDoc, err := LoadAsHtmlDoc(tplPath)
     if err != nil {
         return nil, err
     }
@@ -172,7 +176,8 @@ func BuildOutput(docs []goquery.Document) (*goquery.Document, error) {
     return outDoc, nil
 }
 
-func render(paths []string) (*goquery.Document, error) {
+// TODO error handling, see errgroup
+func ConvertAll(paths []string) []goquery.Document {
     docs := make([]goquery.Document, len(paths))
     var wg sync.WaitGroup
     wg.Add(len(paths))
@@ -181,7 +186,7 @@ func render(paths []string) (*goquery.Document, error) {
         go ConvertToHtmlDoc(path, &docs[idx], &wg)
     }
     wg.Wait()
-    return BuildOutput(docs)
+    return docs
 }
 
 func DocToHtml(doc *goquery.Document) (string, error) {
@@ -192,18 +197,26 @@ func DocToHtml(doc *goquery.Document) (string, error) {
     return gohtml.Format(html), nil
 }
 
+func render(paths []string) (*goquery.Document, error) {
+    if len(paths) == 0 {
+        return nil, errors.New("Need at least one input")
+    }
+    docs := ConvertAll(paths)
+    out, err := BuildOutput(OutputTemplatePath, docs)
+    if err != nil {
+        return nil, err
+        log.Fatal(err)
+    }
+    return out, nil
+}
+
+
 
 func main() {
     // TODO argparse
     inputs := os.Args[1:]
-    if len(inputs) == 0 {
-        log.Fatal("Expected at least one argument")
-    }
-    doc, err := render(inputs)
-    if err != nil {
-        log.Fatal(err)
-    }
-    html, err := DocToHtml(doc)
+    out, err := render(inputs)
+    html, err := DocToHtml(out)
     if err != nil {
         log.Fatal(err)
     }
