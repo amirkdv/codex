@@ -12,6 +12,7 @@ import (
     "crypto/md5"
     "encoding/hex"
     "github.com/PuerkitoBio/goquery"
+    "github.com/yosssi/gohtml"
 )
 
 
@@ -188,7 +189,7 @@ func DocToHtml(doc *goquery.Document) (string, error) {
     if err != nil {
         return "", err
     }
-    return html, nil
+    return gohtml.Format(html), nil
 }
 
 
