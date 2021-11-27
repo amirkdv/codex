@@ -11,13 +11,33 @@ import (
     "sync"
     "bytes"
     "crypto/md5"
+    "strings"
     "encoding/hex"
     "github.com/PuerkitoBio/goquery"
     "github.com/yosssi/gohtml"
 )
 
 
-var HeadSelectors = [...]string{"h1", "h2", "h3", "h4", "h5", "li:not(li li)"}
+var HeadSelectors = []string{"h1", "h2", "h3", "h4", "h5", "h6", "li:not(li li)"}
+
+func SelectorRanks(elems []string) map[string]int {
+    ranks := make(map[string]int)
+    for idx, elem := range elems {
+        ranks[elem] = idx
+    }
+    return ranks
+}
+
+func RankOfHead(head *goquery.Selection) int {
+    for i := 0; i < len(HeadSelectors); i++ {
+        if head.Is(HeadSelectors[i]) {
+            fmt.Println("rank:", head.Text(), i, head.Length())
+            return i
+        }
+    }
+    log.Fatal("unexpected head!")
+    return 0
+}
 
 
 const OutputTemplatePath = "static/index.html" // FIXME relpath, os.Executable()
@@ -64,7 +84,9 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
         return err
     }
 
-    Unflatten(doc.Find("body").First(), HeadSelectors[:], 0)
+    doc.Find(strings.Join(HeadSelectors, ", ")).AddClass("codex-head-cand") // FIXME name, document reason: h1, h2, h3 ... does not return children in DOM order
+    Unflatten(doc.Find("body").First(), 0, 0)
+    doc.Find(".codex-head-cand").RemoveClass("codex-head-cand")
 
     doc.Find(".node").Each(func(i int, sel *goquery.Selection) {
         sel.SetAttr("codex-source", path)
@@ -77,27 +99,19 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
 
 
 // TODO error handling
-func Unflatten(root *goquery.Selection, selectors []string, depth int) {
-    if len(selectors) == 0 {
+func Unflatten(root *goquery.Selection, minHeadRank int, depth int) {
+    if minHeadRank >= len(HeadSelectors) {
         return
     }
 
-    var heads *goquery.Selection
-    idx := 0
-
-    for idx < len(selectors) {
-        heads = root.Find(selectors[idx])
-        if heads.Length() > 0 {
-            break
-        }
-        idx ++
-    }
-
-    if heads.Length() == 0 {
+    firstHead := root.ChildrenFiltered(".codex-head-cand").First()
+    if firstHead.Length() == 0 {
         return
     }
+    firstRank := RankOfHead(firstHead)
+    heads := root.ChildrenFiltered(strings.Join(HeadSelectors[:firstRank + 1], ", "))
 
-    // TODO dom children before the first head should get their own node!
+    // TODO dom children before the first head should get their own node?
     heads.Each(func(i int, head *goquery.Selection) {
         var body, node *goquery.Selection
         if i + 1 >= heads.Length() {
@@ -123,7 +137,7 @@ func Unflatten(root *goquery.Selection, selectors []string, depth int) {
             node.PrependSelection(head.Parent())
             node.SetAttr("class", fmt.Sprintf("node node-depth-%d", depth))
 
-            Unflatten(body.Parent(), selectors[idx + 1:], depth + 1) // <= recurse
+            Unflatten(body.Parent(), firstRank + 1, depth + 1) // <= recurse
         }
 
         node.SetAttr("id", fmt.Sprintf("node-%s", ContentHash(node)))
@@ -138,7 +152,7 @@ func ContentHash(node *goquery.Selection) string {
     }
     hash := md5.Sum([]byte(html))
     contentId := hex.EncodeToString(hash[:])[:8]
-    return fmt.Sprintf("%s", contentId)
+    return string(contentId)
 }
 
 // FIXME refactor io.Reader
@@ -209,8 +223,6 @@ func render(paths []string) (*goquery.Document, error) {
     }
     return out, nil
 }
-
-
 
 func main() {
     // TODO argparse

@@ -61,6 +61,8 @@ func Test_H1_H2(t *testing.T) {
     assert.Equal(t, "H1", selText(doc.Find(".node-depth-0 > .node-head")))
     assert.Equal(t, "H2", selText(doc.Find(".node-depth-1 > .node-head")))
     assert.Equal(t, "H2 contents", selText(doc.Find(".node-depth-1 .node-body")))
+
+    assert.Equal(t, 1, doc.Find(".node-depth-0 .node-depth-1").Length())
 }
 
 
@@ -87,6 +89,8 @@ func Test_H1_H3(t *testing.T) {
     assert.Equal(t, "H1", selText(doc.Find(".node-depth-0 > .node-head")))
     assert.Equal(t, "H3", selText(doc.Find(".node-depth-1 > .node-head")))
     assert.Equal(t, "H3 contents", selText(doc.Find(".node-depth-1 .node-body")))
+
+    assert.Equal(t, 1, doc.Find(".node-depth-0 .node-depth-1").Length())
 }
 
 
@@ -121,10 +125,14 @@ func Test_H2_H3_H6(t *testing.T) {
     assert.Equal(t, "H2", selText(doc.Find(".node-depth-0 > .node-head")))
     assert.Equal(t, "H3", selText(doc.Find(".node-depth-1 > .node-head")))
     assert.Equal(t, "H6", selText(doc.Find(".node-depth-2 > .node-head")))
+
+    assert.Equal(t, 1, doc.Find(".node-depth-0 .node-depth-1").Length())
+    assert.Equal(t, 1, doc.Find(".node-depth-0 .node-depth-2").Length())
+    assert.Equal(t, 1, doc.Find(".node-depth-1 .node-depth-2").Length())
 }
 
 
-func _Test_H1_H3_H2(t *testing.T) {
+func Test_H1_H3_H2(t *testing.T) {
     //    H1
     //  /    \
     // H3    H2
@@ -150,5 +158,7 @@ func _Test_H1_H3_H2(t *testing.T) {
 
     assert.Equal(t, "H1", selText(doc.Find(".node-depth-0 > .node-head")))
     assert.Equal(t, "H3", selText(doc.Find(".node-depth-1 > .node-head").First()))
-    assert.Equal(t, "H2", selText(doc.Find(".node-depth-2 > .node-head").Last()))
+    assert.Equal(t, "H2", selText(doc.Find(".node-depth-1 > .node-head").Last()))
+
+    assert.Equal(t, 2, doc.Find(".node-depth-0").Find(".node-depth-1").Length())
 }
