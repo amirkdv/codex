@@ -9,12 +9,12 @@ import (
     "github.com/PuerkitoBio/goquery"
 )
 
-// PreNode is that which will turn into a node. It contains
+// PreNode is that which will turn into a node.
 type PreNode struct {
-    // a single element Selection heading the node, eg an <h1>
+    // a single-element Selection heading the node, eg an <h1>
     head *goquery.Selection
 
-    // Each node has a body consisting of all subsequent siblings of the node's
+    // Node body consists of all subsequent siblings of the node's
     // head until and excluding the subsequent node head, eg everything
     // between an <h1> and the subsequent <h1>.
     body *goquery.Selection
@@ -41,7 +41,7 @@ func Treeify(doc *goquery.Document) {
 var HeadSelectors = []string{"h1", "h2", "h3", "h4", "h5", "h6", "hr"}
 
 // The rank of a heading is its index in HeadSelectors. The relative value of
-// ranks between different nodes is what dictatese their relative tree position.
+// ranks between different nodes is what dictates their relative tree position.
 func rankOfHead(head *goquery.Selection) int {
     for i := 0; i < len(HeadSelectors); i++ {
         if head.Is(HeadSelectors[i]) {
@@ -94,6 +94,11 @@ func treeify(root *goquery.Selection, depth int) {
         log.Fatal("expected a single root element!")
     }
 
+    // caution: the point of tmpHeadClass is the following query.
+    // If we simply concatenate head selectors with ",", the resulting selection
+    // will *not* necessarily be in correct tree order. For example if you ask
+    // for `h1, h2, h3` in `<h3>...</h3> ... <h2>...</h2>` you'll get the h2
+    // before the h3.
     firstHead := root.ChildrenFiltered("." + tmpHeadClass).First()
     if firstHead.Length() == 0 {
         treeifyWithoutHeads(root, depth)
