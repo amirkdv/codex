@@ -28,13 +28,7 @@ func Mtime(path string) (time.Time, error) {
     return mtime, nil
 }
 
-
-func ConvertToHtmlDoc(path string) (*goquery.Document, error) {
-    mtime, err := Mtime(path)
-    if err != nil {
-        return nil, err
-    }
-
+func Pandoc(path string) (*goquery.Document, error) {
     cmd := exec.Command("pandoc", "-t", "html", path)
 
     stdout, err := cmd.StdoutPipe()
@@ -55,13 +49,28 @@ func ConvertToHtmlDoc(path string) (*goquery.Document, error) {
         return nil, err
     }
 
-    stderrContents, err := io.ReadAll(stderr)
+    errMsg, err := io.ReadAll(stderr)
     if err != nil {
         return nil, err
     }
 
     if err = cmd.Wait(); err != nil {
-        return nil, errors.New(string(stderrContents))
+        return nil, errors.New(string(errMsg))
+    }
+
+    return doc, nil
+}
+
+
+func Transform(path string) (*goquery.Document, error) {
+    mtime, err := Mtime(path)
+    if err != nil {
+        return nil, err
+    }
+
+    doc, err := Pandoc(path)
+    if err != nil {
+        return nil, err
     }
 
     Treeify(doc)
@@ -75,7 +84,7 @@ func ConvertToHtmlDoc(path string) (*goquery.Document, error) {
     return doc, nil
 }
 
-func BuildOutput(tplPath string, docs []goquery.Document) (*goquery.Document, error) {
+func Assemble(docs []goquery.Document, tplPath string) (*goquery.Document, error) {
     outDoc, err := LoadHtmlPath(tplPath)
     if err != nil {
         return nil, err
@@ -91,11 +100,11 @@ func BuildOutput(tplPath string, docs []goquery.Document) (*goquery.Document, er
         buffer.WriteString(html)
     }
     outDoc.Find("main").First().SetHtml(buffer.String())
-    // HACK outDoc.Find(".node:not(:has(.node))").AddClass("codex-leaf")
+    outDoc.Find(".node:not(:has(.node))").AddClass("node-leaf")
     return outDoc, nil
 }
 
-func ConvertAll(paths []string) ([]goquery.Document, error) {
+func TransformAll(paths []string) ([]goquery.Document, error) {
     docs := make([]goquery.Document, len(paths))
 
     var errg errgroup.Group
@@ -103,7 +112,7 @@ func ConvertAll(paths []string) ([]goquery.Document, error) {
         path := path
         idx := idx
         errg.Go(func() error {
-            doc, err := ConvertToHtmlDoc(path)
+            doc, err := Transform(path)
             if err != nil {
                 return err
             }
@@ -117,15 +126,15 @@ func ConvertAll(paths []string) ([]goquery.Document, error) {
     return docs, nil
 }
 
-func render(paths []string) (*goquery.Document, error) {
+func Codex(paths []string) (*goquery.Document, error) {
     if len(paths) == 0 {
         return nil, errors.New("Need at least one input")
     }
-    docs, err := ConvertAll(paths)
+    docs, err := TransformAll(paths)
     if err != nil {
         log.Fatal(err)
     }
-    out, err := BuildOutput(OutputTemplatePath, docs)
+    out, err := Assemble(docs, OutputTemplatePath)
     if err != nil {
         return nil, err
         log.Fatal(err)
@@ -136,7 +145,7 @@ func render(paths []string) (*goquery.Document, error) {
 func main() {
     // TODO argparse
     inputs := os.Args[1:]
-    out, err := render(inputs)
+    out, err := Codex(inputs)
     if err != nil {
         log.Fatal(err)
     }

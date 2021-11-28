@@ -15,7 +15,7 @@ func Test_H1_p(t *testing.T) {
 
         Hello World
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 2, doc.Find(".node").Length())
@@ -41,7 +41,7 @@ func Test_H2_p_p(t *testing.T) {
 
         Goodbye World
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 3, doc.Find(".node").Length())
@@ -64,7 +64,7 @@ func Test_H1_H1(t *testing.T) {
         # H1b
 
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 2, doc.Find(".node").Length())
@@ -89,7 +89,7 @@ func Test_H1_p_H1(t *testing.T) {
 
         # H1b
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 3, doc.Find(".node").Length())
@@ -116,7 +116,7 @@ func Test_H1_p_p_H2(t *testing.T) {
 
         ## H2
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 4, doc.Find(".node").Length())
@@ -139,7 +139,7 @@ func Test_H1_H2(t *testing.T) {
         ## H2
 
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 2, doc.Find(".node").Length())
@@ -166,7 +166,7 @@ func Test_H1_p_H2_p(t *testing.T) {
         ## H2
 
         Goodbye World`)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 4, doc.Find(".node").Length())
@@ -195,7 +195,7 @@ func Test_H1_H3(t *testing.T) {
 
         ### H3
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 2, doc.Find(".node").Length())
@@ -223,7 +223,7 @@ func Test_H2_H3_H6(t *testing.T) {
 
         ##### H6
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
     // expect: H2 > H3 > H6
 
@@ -259,7 +259,7 @@ func Test_H1_H3_H2_H3(t *testing.T) {
 
         ### H3 depth 2
         `)
-    doc, _ := render([]string{fname})
+    doc, _ := Codex([]string{fname})
     defer os.Remove(fname)
 
     assert.Equal(t, 4, doc.Find(".node").Length())
@@ -285,7 +285,7 @@ func Test_md_rst(t *testing.T) {
 
         Hello World RST
         `)
-    doc, _ := render([]string{fnameMd, fnameRst})
+    doc, _ := Codex([]string{fnameMd, fnameRst})
     defer os.Remove(fnameMd)
     defer os.Remove(fnameRst)
 
