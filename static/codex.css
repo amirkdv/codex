@@ -178,20 +178,17 @@ blockquote {
   background: #fafafa;
   cursor: pointer;
 }
-.node-head > li:hover {
-  cursor: auto !important;
-}
 .node-head {
-  padding-left: 10px;
-  padding-bottom: 1px;
   position: relative;
+  padding: 0.5em 0.5em;
   border-radius: 5px;
+}
+.node-head hr {
+  border: 1px solid #f3f3f3;
 }
 .node-body {
   padding-left: 12px;
-}
-.node-body > ul {
-  padding-left: 0em;
+  font-size: 1.2rem;
 }
 .node.node-depth-1 { margin-left: 15px; }
 .node.node-depth-2 { margin-left: 18px; }
