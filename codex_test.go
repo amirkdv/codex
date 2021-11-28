@@ -272,3 +272,30 @@ func Test_H1_H3_H2_H3(t *testing.T) {
     assert.Equal(t, "H2", selText(doc.Find(".node-depth-1 > .node-head").Last()))
     assert.Equal(t, "H3 depth 2", selText(doc.Find(".node-depth-2 > .node-head")))
 }
+
+func Test_md_rst(t *testing.T) {
+    fnameMd := TempSourceFile("md", `
+        # MD
+
+        Hello World MD
+        `)
+    fnameRst := TempSourceFile("rst", `
+        RST
+        ===
+
+        Hello World RST
+        `)
+    doc, _ := render([]string{fnameMd, fnameRst})
+    defer os.Remove(fnameMd)
+    defer os.Remove(fnameRst)
+
+    assert.Equal(t, 4, doc.Find(".node").Length())
+    assert.Equal(t, 2, doc.Find(".node-depth-0").Length())
+    assert.Equal(t, 2, doc.Find(".node-depth-1").Length())
+
+    assert.Equal(t, "MD", selText(doc.Find(".node-depth-0 > .node-head").First()))
+    assert.Equal(t, "RST", selText(doc.Find(".node-depth-0 > .node-head").Last()))
+
+    assert.Equal(t, "Hello World MD", selText(doc.Find(".node-depth-1 .node-body").First()))
+    assert.Equal(t, "Hello World RST", selText(doc.Find(".node-depth-1 .node-body").Last()))
+}

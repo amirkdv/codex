@@ -1,6 +1,7 @@
 package main
 
 import (
+    "io"
     "fmt"
     "log"
     "os"
@@ -8,8 +9,8 @@ import (
     "os/exec"
     "syscall"
     "time"
-    "sync"
     "bytes"
+    "golang.org/x/sync/errgroup"
     "github.com/PuerkitoBio/goquery"
 )
 
@@ -28,33 +29,39 @@ func Mtime(path string) (time.Time, error) {
 }
 
 
-func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) error {
-    defer wg.Done()
+func ConvertToHtmlDoc(path string) (*goquery.Document, error) {
     mtime, err := Mtime(path)
     if err != nil {
-        return err
+        return nil, err
     }
 
     cmd := exec.Command("pandoc", "-t", "html", path)
 
     stdout, err := cmd.StdoutPipe()
     if err != nil {
-        return err
+        return nil, err
+    }
+    stderr, err := cmd.StderrPipe()
+    if err != nil {
+        return nil, err
     }
 
     if err = cmd.Start(); err != nil {
-        return err
+        return nil, err
     }
 
-    doc_, err := goquery.NewDocumentFromReader(stdout)
+    doc, err := goquery.NewDocumentFromReader(stdout)
     if err != nil {
-        return err
+        return nil, err
     }
-    *doc = *doc_
 
-    err = cmd.Wait()
+    stderrContents, err := io.ReadAll(stderr)
     if err != nil {
-        return err
+        return nil, err
+    }
+
+    if err = cmd.Wait(); err != nil {
+        return nil, errors.New(string(stderrContents))
     }
 
     Treeify(doc)
@@ -65,7 +72,7 @@ func ConvertToHtmlDoc(path string, doc *goquery.Document, wg *sync.WaitGroup) er
         sel.SetAttr("codex-mtime", mtime.Format(time.RFC3339))
     })
 
-    return nil
+    return doc, nil
 }
 
 func BuildOutput(tplPath string, docs []goquery.Document) (*goquery.Document, error) {
@@ -84,27 +91,40 @@ func BuildOutput(tplPath string, docs []goquery.Document) (*goquery.Document, er
         buffer.WriteString(html)
     }
     outDoc.Find("main").First().SetHtml(buffer.String())
+    // HACK outDoc.Find(".node:not(:has(.node))").AddClass("codex-leaf")
     return outDoc, nil
 }
 
-// TODO error handling, see errgroup
-func ConvertAll(paths []string) []goquery.Document {
+func ConvertAll(paths []string) ([]goquery.Document, error) {
     docs := make([]goquery.Document, len(paths))
-    var wg sync.WaitGroup
-    wg.Add(len(paths))
+
+    var errg errgroup.Group
     for idx, path := range paths {
-        // TODO errors?
-        go ConvertToHtmlDoc(path, &docs[idx], &wg)
+        path := path
+        idx := idx
+        errg.Go(func() error {
+            doc, err := ConvertToHtmlDoc(path)
+            if err != nil {
+                return err
+            }
+            docs[idx] = *doc
+            return nil
+        })
     }
-    wg.Wait()
-    return docs
+    if err := errg.Wait(); err != nil {
+        return nil, err
+    }
+    return docs, nil
 }
 
 func render(paths []string) (*goquery.Document, error) {
     if len(paths) == 0 {
         return nil, errors.New("Need at least one input")
     }
-    docs := ConvertAll(paths)
+    docs, err := ConvertAll(paths)
+    if err != nil {
+        log.Fatal(err)
+    }
     out, err := BuildOutput(OutputTemplatePath, docs)
     if err != nil {
         return nil, err
