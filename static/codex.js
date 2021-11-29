@@ -25,6 +25,8 @@ class Codex {
     this.initHighlighting();
     this.initHeadToggle();
     this.initFullScreen();
+    // TODO
+    // - allow toggling subtrees of li's by the first text child
   }
 
   initSearch() {
