@@ -80,12 +80,14 @@ class Codex {
     // this needs to be a single event handler for the entire DOM
     $('body').on('mousemove mouseenter', '.node', event => {
       $('.node').removeClass('highlight');
-      $(event.target).addClass('highlight');
-      $(event.target).parents('.node').addClass('highlight')
+      const $node = $(event.target);
+      $node.addClass('highlight');
+      $node.parents('.node').addClass('highlight')
     });
     $('body').on('mouseleave', '.node', event => {
-      $(event.target).children('.node').removeClass('highlight');
-      $(event.target).removeClass('highlight');
+      const $node = $(event.target);
+      $node.children('.node').removeClass('highlight');
+      $node.removeClass('highlight');
     });
   }
 
