@@ -1,13 +1,12 @@
 body {
   width: 90vw;
-  max-width: 60rem;
+  max-width: 80rem;
   margin: 3em auto;
 
   color: #3d3d3d;
 
   font-family: 'Ubuntu Mono', monospace;
   line-height: 1.5;
-  font-size: 16px;
 }
 
 main {
@@ -70,7 +69,7 @@ mark {
   left: 15vw;
 
   width: 70vw;
-  max-height: 80vh
+  max-height: 80vh;
   padding: 1em;
 
   box-shadow: 1px 1px 5px 1px #ddd;
@@ -151,7 +150,7 @@ ul.task-list > li li {
 
 /***** Code blocks *****/
 code, pre {
-  font-size: 0.75rem;
+  font-size: 1rem;
   background: #f5f5fa;
   border-radius: 5px;
 }
