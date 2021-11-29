@@ -1,17 +1,8 @@
 package main
 
-import (
-	"log"
-	"os"
-)
+import "os"
 
 func main() {
 	inputs := os.Args[1:]
-	cdx, err := NewCodex(inputs)
-	if err != nil {
-		log.Fatal(err)
-	}
-	go cdx.BuildAndWatch()
-	go cdx.Serve(":8000")
-	select {}
+	NewServer(inputs, ":8000").Start()
 }

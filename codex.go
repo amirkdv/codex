@@ -4,12 +4,9 @@ import (
 	"bytes"
 	"os"
 	"errors"
-	"fmt"
-	"github.com/fsnotify/fsnotify"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/sync/errgroup"
 	"log"
-	"net/http"
 	"path"
 )
 
@@ -31,8 +28,8 @@ func NewCodex(paths []string) (*Codex, error) {
 		return nil, errors.New("Need at least one input")
 	}
 	codocs := make([]*Codocument, len(paths))
-	for idx, path := range paths {
-		codocs[idx] = &Codocument{path: path}
+	for idx, path_ := range paths {
+		codocs[idx] = &Codocument{path: path_}
 	}
 	return &Codex{inputs: codocs}, nil
 }
@@ -88,62 +85,6 @@ func (cdx *Codex) Build() error {
 	return nil
 }
 
-func (cdx *Codex) BuildAndWatch() {
-	if err := cdx.Build(); err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Finished building from", len(cdx.inputs), "docs")
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
-
-	go cdx.buildOnWrite(watcher)
-
-	for _, codoc := range cdx.inputs {
-		if err = watcher.Add(codoc.path); err != nil {
-			log.Fatal(err)
-		}
-	}
-	select {} // we're indefinitely waiting for fsnotify in separate goroutine
-}
-
-func (cdx *Codex) buildOnWrite(watcher *fsnotify.Watcher) {
-	log.Println("Watching", len(cdx.inputs), "docs for changes ...")
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				return
-			}
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				log.Println(event.Name, "has changed: rebuilding ...")
-				// FIXME debounce
-				if err := cdx.Build(); err != nil {
-					log.Fatal(err)
-				}
-				log.Println("Finished rebuilding")
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return
-			}
-			log.Println("error:", err)
-		}
-	}
-}
-
-func (cdx *Codex) Serve(addr string) {
-	http.Handle("/static/", http.FileServer(http.Dir(RootDir())))
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
-		fmt.Fprintf(w, DocToHtml(cdx.output))
-	})
-
-	log.Println("Starting server at address", addr)
-    if err := http.ListenAndServe(addr, nil); err != nil {
-        log.Fatal(err)
-    }
+func (cdx *Codex) Output() string {
+	return DocToHtml(cdx.output)
 }
