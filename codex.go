@@ -2,87 +2,75 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"errors"
 	"fmt"
+	"github.com/fsnotify/fsnotify"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/sync/errgroup"
-	"io"
 	"log"
-	"os"
-	"os/exec"
-	"syscall"
-	"time"
+	"path"
 )
 
-const OutputTemplatePath = "static/index.html" // FIXME relpath, os.Executable()
-
-func Mtime(path string) (time.Time, error) {
-	fileinfo, err := os.Stat(path)
+func StaticDir() string {
+	exe, err := os.Executable()
 	if err != nil {
-		return time.Time{}, err
+		log.Fatal(err)
 	}
-	stat := fileinfo.Sys().(*syscall.Stat_t)
-	mtime := time.Unix(stat.Mtim.Sec, stat.Mtim.Nsec)
-	return mtime, nil
+	return path.Join(path.Dir(exe), "static")
 }
 
-func Pandoc(path string) (*goquery.Document, error) {
-	cmd := exec.Command("pandoc", "-t", "html", path)
+var OutputTemplatePath = path.Join(StaticDir(), "index.html")
 
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, err
-	}
-
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	doc, err := goquery.NewDocumentFromReader(stdout)
-	if err != nil {
-		return nil, err
-	}
-
-	errMsg, err := io.ReadAll(stderr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = cmd.Wait(); err != nil {
-		return nil, errors.New(string(errMsg))
-	}
-
-	return doc, nil
+type Codex struct {
+	inputs []*Codocument
 }
 
-func Transform(path string) (*goquery.Document, error) {
-	mtime, err := Mtime(path)
-	if err != nil {
-		return nil, err
+func NewCodex(paths []string) (*Codex, error) {
+	if len(paths) == 0 {
+		return nil, errors.New("Need at least one input")
 	}
-
-	doc, err := Pandoc(path)
-	if err != nil {
-		return nil, err
+	codocs := make([]*Codocument, len(paths))
+	for idx, path := range paths {
+		codoc, err := NewCodocument(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		codocs[idx] = codoc
 	}
-
-	Treeify(doc)
-
-	doc.Find(".node").Each(func(i int, sel *goquery.Selection) {
-		sel.SetAttr("codex-source", path)
-		// render mtime in ISO 8601 (RFC 3339), compatible with JS Date().
-		sel.SetAttr("codex-mtime", mtime.Format(time.RFC3339))
-	})
-
-	return doc, nil
+	return &Codex{codocs}, nil
 }
 
-func Assemble(docs []goquery.Document, tplPath string) (*goquery.Document, error) {
-	outDoc, err := LoadHtmlPath(tplPath)
+func (cdx Codex) TransformAll() ([]*goquery.Document, error) {
+	htmlDocs := make([]*goquery.Document, len(cdx.inputs))
+
+	var errg errgroup.Group
+	for idx, codoc := range cdx.inputs {
+		// because closure around goroutine below
+		idx := idx
+		codoc := codoc
+		errg.Go(func() error {
+			doc, err := codoc.Transform()
+			if err != nil {
+				return err
+			}
+			htmlDocs[idx] = doc
+			return nil
+		})
+	}
+	if err := errg.Wait(); err != nil {
+		return nil, err
+	}
+	return htmlDocs, nil
+}
+
+func (cdx Codex) Build() (*goquery.Document, error) {
+	docs, err := cdx.TransformAll()
+	if err != nil {
+		return nil, err
+	}
+
+	outDoc, err := LoadHtml(CodexOutputTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -98,53 +86,53 @@ func Assemble(docs []goquery.Document, tplPath string) (*goquery.Document, error
 	}
 	outDoc.Find("main").First().SetHtml(buffer.String())
 	outDoc.Find(".node:not(:has(.node))").AddClass("node-leaf")
+
+	log.Println("Finished building")
 	return outDoc, nil
 }
 
-func TransformAll(paths []string) ([]goquery.Document, error) {
-	docs := make([]goquery.Document, len(paths))
+func (cdx Codex) BuildAndWatch() {
+	out, err := cdx.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(DocToHtml(out)) // FIXME serve
 
-	var errg errgroup.Group
-	for idx, path := range paths {
-		path := path
-		idx := idx
-		errg.Go(func() error {
-			doc, err := Transform(path)
-			if err != nil {
-				return err
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+
+	waitForever := make(chan bool)
+	go cdx.buildOnWrite(watcher)
+
+	for _, codoc := range cdx.inputs {
+		if err = watcher.Add(codoc.path); err != nil {
+			log.Fatal(err)
+		}
+	}
+	<-waitForever
+}
+
+func (cdx Codex) buildOnWrite(watcher *fsnotify.Watcher) {
+	log.Println("Watching", len(cdx.inputs), "docs for changes ...")
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
 			}
-			docs[idx] = *doc
-			return nil
-		})
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				log.Println(event.Name, "has changed: rebuilding ...")
+				out, _ := cdx.Build() // FIXME ws send
+				fmt.Println(DocToHtml(out))
+			}
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			log.Println("error:", err)
+		}
 	}
-	if err := errg.Wait(); err != nil {
-		return nil, err
-	}
-	return docs, nil
-}
-
-func Codex(paths []string) (*goquery.Document, error) {
-	if len(paths) == 0 {
-		return nil, errors.New("Need at least one input")
-	}
-	docs, err := TransformAll(paths)
-	if err != nil {
-		log.Fatal(err)
-	}
-	out, err := Assemble(docs, OutputTemplatePath)
-	if err != nil {
-		return nil, err
-		log.Fatal(err)
-	}
-	return out, nil
-}
-
-func main() {
-	// TODO argparse
-	inputs := os.Args[1:]
-	out, err := Codex(inputs)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(DocToHtml(out))
 }

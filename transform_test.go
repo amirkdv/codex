@@ -1,10 +1,24 @@
 package main
 
 import (
+	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"os"
 	"testing"
 )
+
+func _codexTransform(paths []string) *goquery.Document {
+	cdx, err := NewCodex(paths)
+	if err != nil {
+		log.Fatal(err)
+	}
+	out, err := cdx.Build()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return out
+}
 
 func Test_H1_p(t *testing.T) {
 	// H1
@@ -15,7 +29,7 @@ func Test_H1_p(t *testing.T) {
 
         Hello World
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 2, doc.Find(".node").Length())
@@ -40,7 +54,7 @@ func Test_H2_p_p(t *testing.T) {
 
         Goodbye World
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 3, doc.Find(".node").Length())
@@ -62,7 +76,7 @@ func Test_H1_H1(t *testing.T) {
         # H1b
 
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 2, doc.Find(".node").Length())
@@ -87,7 +101,7 @@ func Test_H1_p_H1(t *testing.T) {
 
         # H1b
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 3, doc.Find(".node").Length())
@@ -114,7 +128,7 @@ func Test_H1_p_p_H2(t *testing.T) {
 
         ## H2
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 4, doc.Find(".node").Length())
@@ -136,7 +150,7 @@ func Test_H1_H2(t *testing.T) {
         ## H2
 
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 2, doc.Find(".node").Length())
@@ -163,7 +177,7 @@ func Test_H1_p_H2_p(t *testing.T) {
         ## H2
 
         Goodbye World`)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 4, doc.Find(".node").Length())
@@ -191,7 +205,7 @@ func Test_H1_H3(t *testing.T) {
 
         ### H3
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 2, doc.Find(".node").Length())
@@ -218,7 +232,7 @@ func Test_H2_H3_H6(t *testing.T) {
 
         ##### H6
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 	// expect: H2 > H3 > H6
 
@@ -253,7 +267,7 @@ func Test_H1_H3_H2_H3(t *testing.T) {
 
         ### H3 depth 2
         `)
-	doc, _ := Codex([]string{fname})
+	doc := _codexTransform([]string{fname})
 	defer os.Remove(fname)
 
 	assert.Equal(t, 4, doc.Find(".node").Length())
@@ -279,7 +293,7 @@ func Test_md_rst(t *testing.T) {
 
         Hello World RST
         `)
-	doc, _ := Codex([]string{fnameMd, fnameRst})
+	doc := _codexTransform([]string{fnameMd, fnameRst})
 	defer os.Remove(fnameMd)
 	defer os.Remove(fnameRst)
 
@@ -290,6 +304,6 @@ func Test_md_rst(t *testing.T) {
 	assert.Equal(t, "MD", selText(doc.Find(".node-depth-0 > .node-head").First()))
 	assert.Equal(t, "RST", selText(doc.Find(".node-depth-0 > .node-head").Last()))
 
-	assert.Equal(t, "Hello World MD", selText(doc.Find(".node-depth-1 .node-body").First()))
-	assert.Equal(t, "Hello World RST", selText(doc.Find(".node-depth-1 .node-body").Last()))
+	assert.Equal(t, "Hello World MD", selText(doc.Find(".node-depth-1 > .node-body").First()))
+	assert.Equal(t, "Hello World RST", selText(doc.Find(".node-depth-1 > .node-body").Last()))
 }

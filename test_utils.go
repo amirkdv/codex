@@ -52,7 +52,7 @@ func Unindent(content string) (string, error) {
 // It is the responsibility of caller to delete the file after use.
 func TempSourceFile(extension string, content string) string {
 	// ioutil replaces the * in the pattern by a unique int at runtime
-	fnamePattern := fmt.Sprintf("codex-temp*.%s", extension)
+	fnamePattern := fmt.Sprintf("codex-temp-*.%s", extension)
 	// empty tmpdir means use system default
 	tmpfile, err := ioutil.TempFile("", fnamePattern)
 	if err != nil {
@@ -80,3 +80,4 @@ func selText(sel *goquery.Selection) string {
 func selCount(sel *goquery.Selection, selector string) int {
 	return sel.Find(selector).Length()
 }
+

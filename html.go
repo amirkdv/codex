@@ -4,7 +4,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/yosssi/gohtml"
 	"log"
-	"os"
+	"strings"
 )
 
 func SelectionToHtml(sel *goquery.Selection) string {
@@ -23,14 +23,8 @@ func DocToHtml(doc *goquery.Document) string {
 	return gohtml.Format(html)
 }
 
-func LoadHtmlPath(path string) (*goquery.Document, error) {
-	file, err := os.Open(path)
-	defer file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	doc, err := goquery.NewDocumentFromReader(file)
+func LoadHtml(html string) (*goquery.Document, error) {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
 		return nil, err
 	}
