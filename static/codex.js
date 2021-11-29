@@ -35,23 +35,27 @@ class Codex {
       // TODO revisit the fact that the text of a node is indexed as part of
       // itself and all its parents!
       // TODO this needs to happen on websocket updates too
-      $('.node').each((i, elem) => {
-        config.add({id: elem.id, text: $(elem).text()});
+      $('.node-leaf').each((i, elem) => {
+        config.add({id: elem.id, text: elem.innerText});
       });
     })
 
-    $('#search-input').on('keyup', debounce(200, event => {
+    $('#search-input').on('keyup', debounce(400, event => {
+      // TODO refactor
       if (event.target.value == '') {
         $('.node').removeClass('d-none')
         $('label[for="search-input"]').text('');
         return;
       }
       $('.node').addClass('d-none');
+      // query syntax: https://lunrjs.com/guides/searching.html
+      // bug: colon is broken because it gets interpreted as "field query"
       const hits = this.searchIndex.search(event.target.value);
-      $('#search-input label').text(hits.length ? `${hits.length} matches` : 'no matches');
       for (const hit of hits) {
         $(`#${hit.ref}`).removeClass('d-none');
+        $(`#${hit.ref}`).parents('.node').removeClass('d-none');
       }
+      $('label[for="search-input"]').text(hits.length ? `${hits.length} nodes` : 'no matches');
     }));
   }
 
