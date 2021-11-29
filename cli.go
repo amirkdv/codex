@@ -11,5 +11,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cdx.BuildAndWatch()
+	go cdx.BuildAndWatch()
+	go cdx.Serve(":8000")
+	select {}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/PuerkitoBio/goquery"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -15,25 +16,16 @@ import (
 // infered from file extension by pandoc.
 type Codocument struct {
 	path string
-	mtime time.Time
 }
 
-func NewCodocument(path string) (*Codocument, error) {
-	mtime, err := getMtime(path)
+func (codoc Codocument) Mtime() time.Time {
+	fileinfo, err := os.Stat(codoc.path)
 	if err != nil {
-		return nil, err
-	}
-	return &Codocument{path: path, mtime: mtime}, nil
-}
-
-func getMtime(path string) (time.Time, error) {
-	fileinfo, err := os.Stat(path)
-	if err != nil {
-		return time.Time{}, err
+		log.Fatal(err)
 	}
 	stat := fileinfo.Sys().(*syscall.Stat_t)
 	mtime := time.Unix(stat.Mtim.Sec, stat.Mtim.Nsec)
-	return mtime, nil
+	return mtime
 }
 
 func (codoc Codocument) ToHtml() (*goquery.Document, error) {
@@ -80,7 +72,7 @@ func (codoc Codocument) Transform() (*goquery.Document, error) {
 	htmlDoc.Find(".node").Each(func(i int, sel *goquery.Selection) {
 		sel.SetAttr("codex-source", codoc.path)
 		// render mtime in ISO 8601 (RFC 3339), compatible with JS Date().
-		sel.SetAttr("codex-mtime", codoc.mtime.Format(time.RFC3339))
+		sel.SetAttr("codex-mtime", codoc.Mtime().Format(time.RFC3339))
 	})
 
 	return htmlDoc, nil

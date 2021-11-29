@@ -9,19 +9,21 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/sync/errgroup"
 	"log"
+	"net/http"
 	"path"
 )
 
-func StaticDir() string {
+func RootDir() string {
 	exe, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return path.Join(path.Dir(exe), "static")
+	return path.Dir(exe)
 }
 
 type Codex struct {
 	inputs []*Codocument
+	output *goquery.Document
 }
 
 func NewCodex(paths []string) (*Codex, error) {
@@ -30,13 +32,9 @@ func NewCodex(paths []string) (*Codex, error) {
 	}
 	codocs := make([]*Codocument, len(paths))
 	for idx, path := range paths {
-		codoc, err := NewCodocument(path)
-		if err != nil {
-			return nil, err
-		}
-		codocs[idx] = codoc
+		codocs[idx] = &Codocument{path: path}
 	}
-	return &Codex{codocs}, nil
+	return &Codex{inputs: codocs}, nil
 }
 
 func (cdx Codex) TransformAll() ([]*goquery.Document, error) {
@@ -62,15 +60,16 @@ func (cdx Codex) TransformAll() ([]*goquery.Document, error) {
 	return htmlDocs, nil
 }
 
-func (cdx Codex) Build() (*goquery.Document, error) {
+func (cdx *Codex) Build() error {
+	// FIXME race
 	docs, err := cdx.TransformAll()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	outDoc, err := LoadHtml(CodexOutputTemplate)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var buffer bytes.Buffer
@@ -78,23 +77,22 @@ func (cdx Codex) Build() (*goquery.Document, error) {
 	for _, doc := range docs {
 		html, err := doc.Find("body").First().Html()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		buffer.WriteString(html)
 	}
 	outDoc.Find("main").First().SetHtml(buffer.String())
 	outDoc.Find(".node:not(:has(.node))").AddClass("node-leaf")
 
-	log.Println("Finished building")
-	return outDoc, nil
+	cdx.output = outDoc
+	return nil
 }
 
-func (cdx Codex) BuildAndWatch() {
-	out, err := cdx.Build()
-	if err != nil {
+func (cdx *Codex) BuildAndWatch() {
+	if err := cdx.Build(); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(DocToHtml(out)) // FIXME serve
+	log.Println("Finished building from", len(cdx.inputs), "docs")
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -102,7 +100,6 @@ func (cdx Codex) BuildAndWatch() {
 	}
 	defer watcher.Close()
 
-	waitForever := make(chan bool)
 	go cdx.buildOnWrite(watcher)
 
 	for _, codoc := range cdx.inputs {
@@ -110,10 +107,10 @@ func (cdx Codex) BuildAndWatch() {
 			log.Fatal(err)
 		}
 	}
-	<-waitForever
+	select {} // we're indefinitely waiting for fsnotify in separate goroutine
 }
 
-func (cdx Codex) buildOnWrite(watcher *fsnotify.Watcher) {
+func (cdx *Codex) buildOnWrite(watcher *fsnotify.Watcher) {
 	log.Println("Watching", len(cdx.inputs), "docs for changes ...")
 	for {
 		select {
@@ -123,8 +120,11 @@ func (cdx Codex) buildOnWrite(watcher *fsnotify.Watcher) {
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				log.Println(event.Name, "has changed: rebuilding ...")
-				out, _ := cdx.Build() // FIXME ws send
-				fmt.Println(DocToHtml(out))
+				// FIXME debounce
+				if err := cdx.Build(); err != nil {
+					log.Fatal(err)
+				}
+				log.Println("Finished rebuilding")
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -133,4 +133,17 @@ func (cdx Codex) buildOnWrite(watcher *fsnotify.Watcher) {
 			log.Println("error:", err)
 		}
 	}
+}
+
+func (cdx *Codex) Serve(addr string) {
+	http.Handle("/static/", http.FileServer(http.Dir(RootDir())))
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
+		fmt.Fprintf(w, DocToHtml(cdx.output))
+	})
+
+	log.Println("Starting server at address", addr)
+    if err := http.ListenAndServe(addr, nil); err != nil {
+        log.Fatal(err)
+    }
 }

@@ -13,11 +13,10 @@ func _codexTransform(paths []string) *goquery.Document {
 	if err != nil {
 		log.Fatal(err)
 	}
-	out, err := cdx.Build()
-	if err != nil {
+	if err := cdx.Build(); err != nil {
 		log.Fatal(err)
 	}
-	return out
+	return cdx.output
 }
 
 func Test_H1_p(t *testing.T) {
