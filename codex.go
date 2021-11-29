@@ -20,8 +20,6 @@ func StaticDir() string {
 	return path.Join(path.Dir(exe), "static")
 }
 
-var OutputTemplatePath = path.Join(StaticDir(), "index.html")
-
 type Codex struct {
 	inputs []*Codocument
 }
@@ -34,7 +32,7 @@ func NewCodex(paths []string) (*Codex, error) {
 	for idx, path := range paths {
 		codoc, err := NewCodocument(path)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		codocs[idx] = codoc
 	}
