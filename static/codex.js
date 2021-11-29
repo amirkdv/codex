@@ -60,11 +60,12 @@ class Codex {
   }
 
   initFileLabels() {
-    $('.node-depth-0').each((idx, elem) => {
+    $('.node').each((idx, elem) => {
       const $elem = $(elem);
-      const fname = $elem.attr("codex-source");
-      const mtime = (new Date($elem.attr("codex-mtime"))).toLocaleString();
-      $elem.prepend(`<div class="source-file-label"> ${fname} (last updated: ${mtime}) </div>`);
+      const fname = $elem.attr('codex-source');
+      const mtime = (new Date($elem.attr('codex-mtime'))).toLocaleString();
+      const $label = $(`<div class="source-file-label"> ${fname} (last updated: ${mtime}) </div>`);
+      $elem.children('.node-head').prepend($label);
     });
   }
 

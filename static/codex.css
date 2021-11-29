@@ -26,8 +26,14 @@ main {
 
 /****** File labels *****/
 .source-file-label {
-  padding-left: 10px;
   color: #888;
+  visibility: hidden;
+  font-size: 0.875rem;
+}
+
+.node-depth-0 > .node-head > .source-file-label,
+.node:hover > .node-head > .source-file-label {
+  visibility: visible;
 }
 
 /******** Search ********/
