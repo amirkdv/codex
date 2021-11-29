@@ -51,10 +51,16 @@ class Codex {
       // query syntax: https://lunrjs.com/guides/searching.html
       // bug: colon is broken because it gets interpreted as "field query"
       const hits = this.searchIndex.search(event.target.value);
-      for (const hit of hits) {
-        $(`#${hit.ref}`).removeClass('d-none');
-        $(`#${hit.ref}`).parents('.node').removeClass('d-none');
-      }
+      $('body').unmark({
+        done: () => {
+          for (const hit of hits) {
+            $(`#${hit.ref}`).removeClass('d-none');
+            $(`#${hit.ref}`).parents('.node').removeClass('d-none');
+            $(`#${hit.ref}`).mark(Object.keys(hit.matchData.metadata));
+          }
+        }
+      });
+
       $('label[for="search-input"]').text(hits.length ? `${hits.length} nodes` : 'no matches');
     }));
   }

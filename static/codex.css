@@ -38,6 +38,14 @@ main {
 
 /******** Search ********/
 
+mark {
+  /* highlighted text, produced by mark.js */
+  background: #eaf8fb;
+  color: inherit;
+  padding: 0.1rem 0;
+  border-bottom: 4px solid #bfeaf3;
+}
+
 #top-bar #search-input {
   display: block;
 
