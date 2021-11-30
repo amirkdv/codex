@@ -89,12 +89,20 @@ func (srv *Server) OnFileChange(path string) {
 	html := srv.codex.Output()
 
 	// update clients
-	for _, ws := range srv.websockets {
+	for idx, ws := range srv.websockets {
 		log.Println("Updating", len(srv.websockets), "websocket(s)")
 		if err := ws.WriteMessage(websocket.TextMessage, []byte(html)); err != nil {
-			log.Println("Failed to write to websocket:", err)
+			log.Println("Failed to write to websocket,", err)
+			srv.dropWebSocket(idx)
 		}
 	}
+}
+
+func (srv *Server) dropWebSocket(idx int) {
+	log.Println("Dropping stale websocket:", srv.websockets[idx].RemoteAddr())
+	nsocks := len(srv.websockets)
+	srv.websockets[idx] = srv.websockets[nsocks - 1]
+	srv.websockets = srv.websockets[:nsocks - 1]
 }
 
 func (srv *Server) Serve() {
