@@ -215,22 +215,6 @@ blockquote {
   display: none;
 }
 
-/**** Auto-reload ****/
-#spinner {
-  position: fixed;
-  top: -2em;
-  right: 40%;
-  width: 10%;
-}
-#spinner img {
-  opacity: 0;
-  width: 100%;
-  transition: opacity .3s linear;
-}
-#spinner.enabled img {
-  opacity: 1;
-}
-
 /******** Tables ******/
 th, tr, td {
     border: 1px solid #ddd;

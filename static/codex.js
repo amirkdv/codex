@@ -14,36 +14,32 @@ const debounce = (wait, func) => {
 
 class Codex {
   constructor(root) {
-    // TODO this needs to be repeated everytime a new node gets through the door
-    // each node gets a full screen button
-    $('.node').each((idx, elem) => {
-      $(elem).append(`<div class="full-screen-button"> ⤢ </div>`);
-    });
-
     this.initSearch();
     this.initFileLabels();
     this.initHighlighting();
     this.initHeadToggle();
     this.initFullScreen();
-    // TODO
-    // - allow toggling subtrees of li's by the first text child
+    this.initWebSocket();
+  }
+
+  addFullScreenButtons() {
+    $('.node').each((idx, elem) => {
+      $(elem).append(`<div class="full-screen-button"> ⤢ </div>`);
+    });
   }
 
   initSearch() {
+    delete this.searchIndex
     this.searchIndex = lunr(config => {
       config.ref('id');
       config.field('text');
 
-      // TODO revisit the fact that the text of a node is indexed as part of
-      // itself and all its parents!
-      // TODO this needs to happen on websocket updates too
       $('.node-leaf').each((i, elem) => {
         config.add({id: elem.id, text: elem.innerText});
       });
     })
 
     $('#search-input').on('keyup', debounce(400, event => {
-      // TODO refactor
       if (event.target.value == '') {
         $('.node').removeClass('d-none')
         $('label[for="search-input"]').text('');
@@ -144,6 +140,23 @@ class Codex {
   exitFullScreen() {
     $('body').removeClass('full-screen');
     $('#full-screen-modal').addClass('inactive');
+  }
+
+  initWebSocket() {
+    this.websocket = new WebSocket(`ws://${document.location.host}/ws`);
+    this.websocket.onmessage = async (msg) => {
+      // assumes msg body is whole page html, extract main and replace in place
+
+      const data = await msg.data;
+      const text = (typeof data === 'string') ? data : await data.text();
+
+      const parser = new DOMParser();
+      const $newDoc = $(parser.parseFromString(text, 'text/html'));
+      $('main').html($newDoc.find('main').html());
+
+      this.addFullScreenButtons()
+      this.initSearch()
+    }
   }
 }
 

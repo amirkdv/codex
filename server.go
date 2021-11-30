@@ -3,15 +3,24 @@ package main
 import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"time"
+)
+
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
 )
 
 type Server struct {
 	codex *Codex
 	addr string
 	watcher *fsnotify.Watcher
+
+	websockets []*websocket.Conn
 }
 
 func NewServer(paths []string, addr string) *Server {
@@ -78,6 +87,14 @@ func (srv *Server) OnFileChange(path string) {
 	log.Println("Finished rebuilding")
 
 	html := srv.codex.Output()
+
+	// update clients
+	for _, ws := range srv.websockets {
+		log.Println("Updating", len(srv.websockets), "websocket(s)")
+		if err := ws.WriteMessage(websocket.TextMessage, []byte(html)); err != nil {
+			log.Println("Failed to write to websocket:", err)
+		}
+	}
 }
 
 func (srv *Server) Serve() {
@@ -85,6 +102,14 @@ func (srv *Server) Serve() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
 		fmt.Fprintf(w, srv.codex.Output())
+	})
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		ws, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return // TODO when does this happen?
+		}
+		log.Println("Accepted new websocket from", r.RemoteAddr)
+		srv.websockets = append(srv.websockets, ws)
 	})
 
 	log.Println("Starting server at address", srv.addr)

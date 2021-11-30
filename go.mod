@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/gorilla/websocket v1.4.2
 	github.com/stretchr/testify v1.7.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
