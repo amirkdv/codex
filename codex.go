@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
-	"os"
 	"errors"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/sync/errgroup"
 	"log"
+	"os"
 	"path"
 )
 

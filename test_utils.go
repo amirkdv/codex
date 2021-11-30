@@ -80,4 +80,3 @@ func selText(sel *goquery.Selection) string {
 func selCount(sel *goquery.Selection, selector string) int {
 	return sel.Find(selector).Length()
 }
-

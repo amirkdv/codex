@@ -16,8 +16,8 @@ var (
 )
 
 type Server struct {
-	codex *Codex
-	addr string
+	codex   *Codex
+	addr    string
 	watcher *fsnotify.Watcher
 
 	websockets []*websocket.Conn
@@ -40,8 +40,8 @@ func NewServer(paths []string, addr string) *Server {
 	}
 
 	return &Server{
-		codex: codex,
-		addr: addr,
+		codex:   codex,
+		addr:    addr,
 		watcher: watcher,
 	}
 }
@@ -100,7 +100,7 @@ func (srv *Server) OnFileChange(path string) {
 func (srv *Server) Serve() {
 	http.Handle("/static/", http.FileServer(http.Dir(RootDir())))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request){
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, srv.codex.Output())
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +113,7 @@ func (srv *Server) Serve() {
 	})
 
 	log.Println("Starting server at address", srv.addr)
-    if err := http.ListenAndServe(srv.addr, nil); err != nil {
-        log.Fatal(err)
-    }
+	if err := http.ListenAndServe(srv.addr, nil); err != nil {
+		log.Fatal(err)
+	}
 }
