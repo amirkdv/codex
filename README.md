@@ -8,22 +8,23 @@ other format supported by [pandoc].
 
 [pandoc]: https://pandoc.org/
 
-(Tested with Go 1.17)
+Tested with Go 1.17.
 
 ## Quick Start
 
 ```sh
 $ codex A.md B.rst C.tex
 
-Starting server on port 8000 ...
 Finished building from 3 docs
+Starting server at address :8000
 Watching 3 docs for changes ...
 ```
 
 This will transform all your input documents to Codex's unified format and start
 
-* serve your output on port 8000
-* watch your input files for changes and rebuild the Codex output upon changes
+* serve Codex on port 8000,
+* watch your input files for changes and rebuild the Codex output upon changes,
+* update clients every time an input changes.
 
 ## How does it work?
 
@@ -36,9 +37,10 @@ Codex has four pieces:
    of the previous step, Codex traverses and transforms the tree in such a way
    to make it match its own [semantic structure](#semantic-trees).
 3. **Server**: the server is responsible for serving Codex output, watch its
-   inputs and trigger rebuilds.
+   inputs. Every time an input changes, the server triggers a rebuild and
+   communicate DOM updates to clients over WebSockets.
 4. **Client**: JS code responsible for turning Codex's output HTML into a
-   live, searchable, easy to navigate web app.
+   live app with search, folding, and full-screen.
 
 ### Semantic Trees
 
