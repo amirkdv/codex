@@ -1,4 +1,4 @@
-module amirkdv/codex
+module github.com/amirkdv/codex
 
 go 1.17
 
