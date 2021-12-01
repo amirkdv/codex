@@ -36,20 +36,18 @@ I write a lot of text. It could be drafts, todos, thoughts, ideas,
 study notes, what have you. Their topic, format, and cadence varies over time
 but a few things are constant:
 
-1. I don't want to integrate a whole new note-taking app in my life and learn
-   all about its UI, semantics, menus, quirks and limitations. Note taking
-   should be zero effort: written in my editor of choice, in my format of
-   choice, stored/versioned by my tool of choice. A good journaling workflow
-   should preferably be resilient to changes in these preferences.
-1. Notes should be in plain text. That way all normal tools (grep, vim, git, etc) Just Work.
-1. Viewing, searching and exploring notes is the main point of keeping track of
-   them. However, this is an activity that happens at a distinct time from
-   writing. When writing, you want the least friction to focus on what you're
-   writing. When browsing, you're seeking and rummaging.  You want to have all
-   your notes at your disposal.
-1. I paste a lot of my writing in external tools that support markdown. I won't
-   miss the annoying workflow of fixing my markdown by switching between "edit"
-   and "preview" on a comment widget.
+1. **zero effort**: I don't want to integrate a whole new note-taking app in my
+   life and learn all about its UI, semantics, menus, quirks and limitations.
+   I'd like to write in my editor of choice (which might change over time), in
+   my format of choice (which might depend on context), and store/version them
+   by my tool of choice. Yet, somehow, I'd like to have a nice UI with good
+   search.
+1. **read vs write**: When writing, I want the least friction to focus on what
+   I'm writing. When reading, I'm exploring, seeking or rummaging. I
+   want to have all my notes at my disposal.
+1. **inter-op**: I paste a lot of my writing in external tools that support
+   markdown (e.g. GitHub) or rich-text paste (e.g. Google Docs). It'd be nice if
+   I could interact with both these scenarios easily.
 
 If this sounds similar to a problem you have, give Codex a go! You might like
 it.
@@ -58,21 +56,20 @@ it.
 
 ![](static/demo.gif)
 
-My notes live in a git repo. They are written in markdown in whatever format I
-wish. There are no formatting rules or special syntax to denote anything. Just
-plain old documents, with headings and sections. I use dates as the top level
-headings, eg `# 2021-11-30 Tue`, but Codex doesn't care about this.
+My notes live in a git repo. They're mostly written in markdown and each may
+have a different file structure. There are no formatting rules or special syntax
+to denote anything. Just plain old documents, with headings and sections. I use
+dates as the top level headings, eg `# 2021-11-30 Tue`, but Codex doesn't care
+about this.
 
 Different files are broken down by date range or topic. Some files are daily
 notes, some are big "archive" files, and some task-specific like a draft of a
 long document. Codex doesn't care about this either.
 
-I always have Codex server running in the background monitoring my notes folder
-for changes; I don't pay any attention to it.
-
-Whenever I need to access my notes, I navigate to the Codex client tab in my
-browser. It always has the latest state of all my notes, in one document, with
-good search.
+I always have a Codex server running in the background monitoring my notes repo
+for changes; I don't pay any attention to it. Whenever I need to access my
+notes, I navigate to the Codex client tab in my browser. It always has the
+latest state of all my notes, in one document, with good (enough?) search.
 
 ## How does it work?
 
@@ -104,13 +101,14 @@ Consider this document:
 
 This DOM tree is a flat list of siblings while its semantic structure is quite
 different:
-```html
-<h1> Title </h1>
-  <p> Paragraph </p>
-  <h3> Section </h3>
-    <p> Section paragraph </p>
-    <h2> Chapter </h2>
-      <p> Chapter paragraph </p>
+```
+<h1> Title </h1>                              h1
+                                             /  \
+  <p> Paragraph </p>                        p   h3
+  <h3> Section </h3>                           /  \
+    <p> Section paragraph </p>                p   h2
+    <h2> Chapter </h2>                              \
+      <p> Chapter paragraph </p>                     p
 ```
 
 Codex transforms the DOM in such a way that it matches its own semantic
