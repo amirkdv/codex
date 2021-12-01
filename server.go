@@ -82,7 +82,7 @@ func (srv *Server) Watch() {
 				return
 			}
 			log.Println("watch error:", err)
-		case <- debouncer.C:
+		case <-debouncer.C:
 			// caution: the current debouncer assumes all inputs are reparsed on
 			// any file change, regardless of which file. If this is optimized,
 			// the debouncer needs to be more sophisticated.
@@ -112,8 +112,8 @@ func (srv *Server) OnFileChange() {
 func (srv *Server) dropWebSocket(idx int) {
 	log.Println("Dropping stale websocket:", srv.websockets[idx].RemoteAddr())
 	nsocks := len(srv.websockets)
-	srv.websockets[idx] = srv.websockets[nsocks - 1]
-	srv.websockets = srv.websockets[:nsocks - 1]
+	srv.websockets[idx] = srv.websockets[nsocks-1]
+	srv.websockets = srv.websockets[:nsocks-1]
 }
 
 func (srv *Server) Serve() {
