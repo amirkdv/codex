@@ -29,7 +29,7 @@ This will transform all your input documents to Codex's unified format and start
 
 ## Why Codex?
 
-I built Codex for a very specific, personal, use case: journaling. Here's how it
+I built Codex for a very specific personal use case: journaling. Here's how it
 happened.
 
 I write a lot of text. It could be drafts, todos, thoughts, ideas,

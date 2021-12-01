@@ -6,6 +6,11 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"time"
+)
+
+const (
+	debounceWait = 200 * time.Millisecond
 )
 
 var (
@@ -60,6 +65,7 @@ func (srv *Server) Start() {
 
 func (srv *Server) Watch() {
 	log.Println("Watching", len(srv.codex.inputs), "docs for changes ...")
+	debouncer := time.NewTimer(debounceWait)
 	for {
 		select {
 		case event, ok := <-srv.watcher.Events:
@@ -67,20 +73,25 @@ func (srv *Server) Watch() {
 				return
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				srv.OnFileChange(event.Name)
+				// don't actually trigger the event handler, just set the timer
+				log.Println(event.Name, "changed: triggering rebuild ...")
+				debouncer.Reset(debounceWait)
 			}
 		case err, ok := <-srv.watcher.Errors:
 			if !ok {
 				return
 			}
 			log.Println("watch error:", err)
+		case <- debouncer.C:
+			// caution: the current debouncer assumes all inputs are reparsed on
+			// any file change, regardless of which file. If this is optimized,
+			// the debouncer needs to be more sophisticated.
+			srv.OnFileChange()
 		}
 	}
 }
 
-// FIXME debounce
-func (srv *Server) OnFileChange(path string) {
-	log.Println(path, "has changed: rebuilding ...")
+func (srv *Server) OnFileChange() {
 	if err := srv.codex.Build(); err != nil {
 		log.Fatal(err)
 	}
