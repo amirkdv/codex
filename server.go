@@ -117,7 +117,12 @@ func (srv *Server) dropWebSocket(idx int) {
 }
 
 func (srv *Server) Serve() {
-	http.Handle("/static/", http.FileServer(http.Dir(RootDir())))
+	http.HandleFunc("/static/", func(w http.ResponseWriter, r *http.Request) {
+		static := STATICS[r.URL.Path]
+		// note: this doesn't populate Content-Length which is mandatory!
+		w.Header().Set("Content-Type", static.ContentType)
+		fmt.Fprintf(w, static.Body)
+	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, srv.codex.Output())
