@@ -12,7 +12,8 @@ Tested with Go 1.17.
 
 ## Quick Start
 
-```sh
+```
+$ go install github.com/amirkdv/codex
 $ codex A.md B.rst C.tex
 
 Finished building from 3 docs
@@ -25,6 +26,53 @@ This will transform all your input documents to Codex's unified format and start
 * serve Codex on port 8000,
 * watch your input files for changes and rebuild the Codex output upon changes,
 * update clients every time an input changes.
+
+## Why Codex?
+
+I built Codex for a very specific, personal, use case: journaling. Here's how it
+happened.
+
+I write a lot of text. It could be drafts, todos, thoughts, ideas,
+study notes, what have you. Their topic, format, and cadence varies over time
+but a few things are constant:
+
+1. I don't want to integrate a whole new note-taking app in my life and learn
+   all about its UI, semantics, menus, quirks and limitations. Note taking
+   should be zero effort: written in my editor of choice, in my format of
+   choice, stored/versioned by my tool of choice. A good journaling workflow
+   should preferably be resilient to changes in these preferences.
+1. Notes should be in plain text. That way all normal tools (grep, vim, git, etc) Just Work.
+1. Viewing, searching and exploring notes is the main point of keeping track of
+   them. However, this is an activity that happens at a distinct time from
+   writing. When writing, you want the least friction to focus on what you're
+   writing. When browsing, you're seeking and rummaging.  You want to have all
+   your notes at your disposal.
+1. I paste a lot of my writing in external tools that support markdown. I won't
+   miss the annoying workflow of fixing my markdown by switching between "edit"
+   and "preview" on a comment widget.
+
+If this sounds similar to a problem you have, give Codex a go! You might like
+it.
+
+## An Example Workflow
+
+![](static/demo.gif)
+
+My notes live in a git repo. They are written in markdown in whatever format I
+wish. There are no formatting rules or special syntax to denote anything. Just
+plain old documents, with headings and sections. I use dates as the top level
+headings, eg `# 2021-11-30 Tue`, but Codex doesn't care about this.
+
+Different files are broken down by date range or topic. Some files are daily
+notes, some are big "archive" files, and some task-specific like a draft of a
+long document. Codex doesn't care about this either.
+
+I always have Codex server running in the background monitoring my notes folder
+for changes; I don't pay any attention to it.
+
+Whenever I need to access my notes, I navigate to the Codex client tab in my
+browser. It always has the latest state of all my notes, in one document, with
+good search.
 
 ## How does it work?
 
@@ -118,7 +166,7 @@ markdown files produce the same tree:
 ## H2
 
 ##### H5
-
+```
 
 **File-scoped**: each file is reasoned about on its own. This is consistent
 with the above rule and implies no tree interference between different input
