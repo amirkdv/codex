@@ -12,17 +12,17 @@ import (
 // PreNode is that which will turn into a node.
 type PreNode struct {
 	// a single-element Selection heading the node, eg an <h1>
-	head *goquery.Selection
+	Head *goquery.Selection
 
 	// Node body consists of all subsequent siblings of the node's
 	// head until and excluding the subsequent node head, eg everything
 	// between an <h1> and the subsequent <h1>.
-	body *goquery.Selection
+	Body *goquery.Selection
 
 	// Each node has a 0 based depth. Depths are relative to context,
 	// independent of tag name. For example, an h3 can head a node of either
 	// depths 0, 1, or 2.
-	depth int
+	Depth int
 }
 
 const tmpHeadClass string = "tmp-codex-head-class"
@@ -56,9 +56,9 @@ func rankOfHead(head *goquery.Selection) int {
 // transformation of the DOM towards the new node tree structure.
 //
 // Before:
-//      <h1> Title </h1>        <!-- prenode.head -->
+//      <h1> Title </h1>        <!-- prenode.Head -->
 //      <h2> Section </h2>      <!-- prenode
-//      <p> Hello World </p>                .body -->
+//      <p> Hello World </p>                .Body -->
 // After:
 //      <node depth=0>
 //        <node-head> <h1> Title </h1> </node-head>
@@ -70,18 +70,18 @@ func rankOfHead(head *goquery.Selection) int {
 func nodify(prenode PreNode) {
 	var node *goquery.Selection
 
-	if prenode.body.Length() == 0 {
-		prenode.head.AfterHtml("<div> </div>")
-		prenode.body = prenode.head.Next()
+	if prenode.Body.Length() == 0 {
+		prenode.Head.AfterHtml("<div> </div>")
+		prenode.Body = prenode.Head.Next()
 	}
 
-	prenode.head.WrapAllHtml("<div class='node-head'> </div>")
+	prenode.Head.WrapAllHtml("<div class='node-head'> </div>")
 
-	prenode.body.WrapAllHtml("<div class='node'> <div class='node-body'> </div> </div>")
-	node = prenode.body.Parent().Parent()
+	prenode.Body.WrapAllHtml("<div class='node'> <div class='node-body'> </div> </div>")
+	node = prenode.Body.Parent().Parent()
 
-	node.PrependSelection(prenode.head.Parent())
-	node.SetAttr("class", fmt.Sprintf("node node-depth-%d", prenode.depth))
+	node.PrependSelection(prenode.Head.Parent())
+	node.SetAttr("class", fmt.Sprintf("node node-depth-%d", prenode.Depth))
 	node.SetAttr("id", fmt.Sprintf("node-%s", contentHash(node)))
 }
 
@@ -129,9 +129,9 @@ func treeifyWithoutHeads(root *goquery.Selection, depth int) {
 	root.Children().Each(func(i int, child *goquery.Selection) {
 		child.BeforeHtml("<hr>")
 		nodify(PreNode{
-			head:  child.Prev(),
-			body:  child,
-			depth: depth,
+			Head:  child.Prev(),
+			Body:  child,
+			Depth: depth,
 		})
 	})
 }

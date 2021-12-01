@@ -15,11 +15,11 @@ import (
 // some sort of markup/down, any format supported by pandoc. Formats are
 // infered from file extension by pandoc.
 type Codocument struct {
-	path string
+	Path string
 }
 
 func (codoc Codocument) Mtime() time.Time {
-	fileinfo, err := os.Stat(codoc.path)
+	fileinfo, err := os.Stat(codoc.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func (codoc Codocument) Mtime() time.Time {
 }
 
 func (codoc Codocument) ToHtml() (*goquery.Document, error) {
-	cmd := exec.Command("pandoc", "-t", "html", codoc.path)
+	cmd := exec.Command("pandoc", "-t", "html", codoc.Path)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -70,7 +70,7 @@ func (codoc Codocument) Transform() (*goquery.Document, error) {
 	Treeify(htmlDoc)
 
 	htmlDoc.Find(".node").Each(func(i int, sel *goquery.Selection) {
-		sel.SetAttr("codex-source", codoc.path)
+		sel.SetAttr("codex-source", codoc.Path)
 		// render mtime in ISO 8601 (RFC 3339), compatible with JS Date().
 		sel.SetAttr("codex-mtime", codoc.Mtime().Format(time.RFC3339))
 	})

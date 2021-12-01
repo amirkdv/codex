@@ -21,10 +21,10 @@ var (
 )
 
 type Server struct {
-	codex   *Codex
-	addr    string
-	watcher *fsnotify.Watcher
+	Codex   *Codex
+	Addr    string // whatever http.Listen() accepts
 
+	watcher *fsnotify.Watcher
 	websockets []*websocket.Conn
 }
 
@@ -38,25 +38,25 @@ func NewServer(paths []string, addr string) *Server {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, codoc := range codex.inputs {
-		if err = watcher.Add(codoc.path); err != nil {
+	for _, codoc := range codex.Inputs {
+		if err = watcher.Add(codoc.Path); err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	return &Server{
-		codex:   codex,
-		addr:    addr,
+		Codex:   codex,
+		Addr:    addr,
 		watcher: watcher,
 	}
 }
 
 func (srv *Server) Start() {
-	log.Println("Starting with", len(srv.codex.inputs), "input document(s)")
-	if err := srv.codex.Build(); err != nil {
+	log.Println("Starting with", len(srv.Codex.Inputs), "input document(s)")
+	if err := srv.Codex.Build(); err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Finished building from", len(srv.codex.inputs), "docs")
+	log.Println("Finished building from", len(srv.Codex.Inputs), "docs")
 
 	go srv.Watch()
 	go srv.Serve()
@@ -64,7 +64,7 @@ func (srv *Server) Start() {
 }
 
 func (srv *Server) Watch() {
-	log.Println("Watching", len(srv.codex.inputs), "docs for changes ...")
+	log.Println("Watching", len(srv.Codex.Inputs), "docs for changes ...")
 	debouncer := time.NewTimer(debounceWait)
 	for {
 		select {
@@ -92,12 +92,12 @@ func (srv *Server) Watch() {
 }
 
 func (srv *Server) OnFileChange() {
-	if err := srv.codex.Build(); err != nil {
+	if err := srv.Codex.Build(); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("Finished rebuilding")
 
-	html := srv.codex.Output()
+	html := srv.Codex.Output()
 
 	// update clients
 	for idx, ws := range srv.websockets {
@@ -125,7 +125,7 @@ func (srv *Server) Serve() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, srv.codex.Output())
+		fmt.Fprintf(w, srv.Codex.Output())
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
@@ -136,8 +136,8 @@ func (srv *Server) Serve() {
 		srv.websockets = append(srv.websockets, ws)
 	})
 
-	log.Println("Starting server at address", srv.addr)
-	if err := http.ListenAndServe(srv.addr, nil); err != nil {
+	log.Println("Starting server at address", srv.Addr)
+	if err := http.ListenAndServe(srv.Addr, nil); err != nil {
 		log.Fatal(err)
 	}
 }

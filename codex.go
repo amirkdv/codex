@@ -19,7 +19,7 @@ func RootDir() string {
 }
 
 type Codex struct {
-	inputs []*Codocument
+	Inputs []*Codocument
 	output *goquery.Document
 }
 
@@ -29,16 +29,16 @@ func NewCodex(paths []string) (*Codex, error) {
 	}
 	codocs := make([]*Codocument, len(paths))
 	for idx, path_ := range paths {
-		codocs[idx] = &Codocument{path: path_}
+		codocs[idx] = &Codocument{Path: path_}
 	}
-	return &Codex{inputs: codocs}, nil
+	return &Codex{Inputs: codocs}, nil
 }
 
 func (cdx Codex) TransformAll() ([]*goquery.Document, error) {
-	htmlDocs := make([]*goquery.Document, len(cdx.inputs))
+	htmlDocs := make([]*goquery.Document, len(cdx.Inputs))
 
 	var errg errgroup.Group
-	for idx, codoc := range cdx.inputs {
+	for idx, codoc := range cdx.Inputs {
 		// because closure around goroutine below
 		idx := idx
 		codoc := codoc
