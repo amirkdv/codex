@@ -8,9 +8,9 @@ other format supported by [pandoc].
 
 [pandoc]: https://pandoc.org/
 
-Tested with Go 1.17.
-
 ## Quick Start
+
+Assuming you have Go and pandoc installed (tested with Go 1.17 and pandoc 2.5):
 
 ```
 $ go install github.com/amirkdv/codex
@@ -21,8 +21,9 @@ Starting server at address :8000
 Watching 3 docs for changes ...
 ```
 
-This will transform all your input documents to Codex's unified format and start
+This will
 
+* transform all your input documents to Codex's unified format,
 * serve Codex on port 8000,
 * watch your input files for changes and rebuild the Codex output upon changes,
 * update clients every time an input changes.
@@ -81,9 +82,9 @@ Codex has four pieces:
 2. **Transform**: this is where the core idea is implemented. Given the DOM tree
    of the previous step, Codex traverses and transforms the tree in such a way
    to make it match its own [semantic structure](#semantic-trees).
-3. **Server**: the server is responsible for serving Codex output, watch its
-   inputs. Every time an input changes, the server triggers a rebuild and
-   communicate DOM updates to clients over WebSockets.
+3. **Server**: the server is responsible for serving Codex output and watch its
+   input files. Every time an input changes, the server triggers a rebuild and
+   communicates DOM updates to its clients over WebSockets.
 4. **Client**: JS code responsible for turning Codex's output HTML into a
    live app with search, folding, and full-screen.
 
@@ -171,3 +172,9 @@ with the above rule and implies no tree interference between different input
 files. For example, the two example files above, if concatenated by Codex,
 will produce a tree consisting of the same subtree twice, one for each of the
 input files.
+
+## To Do
+
+* On file change, only rebuild the difference, not the whole tree.
+* Support markdown embedded LaTeX through pandoc.
+* Support watching folders.
