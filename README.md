@@ -92,24 +92,24 @@ Codex has four pieces:
 
 Consider this document:
 ```html
- <h1> Title </h1>
- <p> Paragraph </p>
- <h3> Section </h3>
- <p> Section paragraph </p>
- <h2> Chapter </h2>
- <p> Chapter paragraph </p>
- ```
+<h1> Title </h1>
+<p> Paragraph </p>
+<h3> Section </h3>
+<p> Section paragraph </p>
+<h2> Chapter </h2>
+<p> Chapter paragraph </p>
+```
 
 This DOM tree is a flat list of siblings while its semantic structure is quite
 different:
-```
-<h1> Title </h1>                              h1
-                                             /  \
-  <p> Paragraph </p>                        p   h3
-  <h3> Section </h3>                           /  \
-    <p> Section paragraph </p>                p   h2
-    <h2> Chapter </h2>                              \
-      <p> Chapter paragraph </p>                     p
+```html
+<h1> Title </h1>                      <!--    h1        -->
+                                      <!--   /  \       -->
+  <p> Paragraph </p>                  <!--  p   h3      -->
+  <h3> Section </h3>                  <!--     /  \     -->
+    <p> Section paragraph </p>        <!--    p   h2    -->
+    <h2> Chapter </h2>                <!--          \   -->
+      <p> Chapter paragraph </p>      <!--           p  -->
 ```
 
 Codex transforms the DOM in such a way that it matches its own semantic
