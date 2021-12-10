@@ -128,19 +128,19 @@ structure. The building block of this is a **node**:
 
 **Are semantic trees well-defined?**
 
-A DOM tree for which it's clear what this "semantic tree" is must follow rigid
-rules. For example, if you wrap an `<h1>` in 5 different `<div>`s, how does the
+A DOM tree needs to follow rigid rules for this "semantic tree" to be well
+defined. For example, if you wrap an `<h1>` in 5 different `<div>`s, how does the
 "headness" of `<h1>` propagate up its ancestry?
 
-Luckily, the kinds of trees that can possibly come out of a typical, say,
+Luckily, the kinds of trees that can possibly come out of a, say,
 markdown or docx file, *are* indeed quite limited; written documents can only
 represent trees that can be flattened into a linear order.
 
-The main technical assumption that Codex makes about its input DOM tree is this:
+The main assumption that Codex makes about its input DOM tree is this:
 
 **All headings in the document are immediate children of `<body>`**
 
-With this, we can then define clearly what the semantic tree is, how its related
+This allows Codex to define what a document's semantic tree is, how it's related
 to the DOM tree, and how to transform the DOM into its semantic structure, see
 `treeify.go`.
 
@@ -148,7 +148,7 @@ to the DOM tree, and how to transform the DOM into its semantic structure, see
 
 Codex node depth calculation is file-scoped and relative to context.
 
-**Relative to context**: its not the heading types that dictate node depths,
+**Relative to context**: it's not the heading types that dictate node depths,
 but their relationship with their neighbors. For example, the following two
 markdown files produce the same tree:
 
