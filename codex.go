@@ -10,17 +10,17 @@ import (
 	"path"
 )
 
+type Codex struct {
+	Inputs []*Codocument
+	output *goquery.Document
+}
+
 func RootDir() string {
 	exe, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
 	}
 	return path.Dir(exe)
-}
-
-type Codex struct {
-	Inputs []*Codocument
-	output *goquery.Document
 }
 
 func NewCodex(paths []string) (*Codex, error) {
@@ -34,7 +34,7 @@ func NewCodex(paths []string) (*Codex, error) {
 	return &Codex{Inputs: codocs}, nil
 }
 
-func (cdx Codex) TransformAll() ([]*goquery.Document, error) {
+func (cdx *Codex) TransformAll() ([]*goquery.Document, error) {
 	htmlDocs := make([]*goquery.Document, len(cdx.Inputs))
 
 	var errg errgroup.Group
