@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
 	"log"
 	"strings"
 )
@@ -75,6 +76,14 @@ func nodify(prenode PreNode) {
 		prenode.Body = prenode.Head.Next()
 	}
 
+	if prenode.Body.Is("ul") {
+		prenode.Body.ChildrenFiltered("li").Each(func(i int, li *goquery.Selection) {
+			nodifyListItem(li.Nodes[0])
+			li.SetAttr("class", fmt.Sprintf("node node-depth-%d", prenode.Depth+1))
+			li.SetAttr("id", fmt.Sprintf("node-%s", contentHash(li)))
+		})
+	}
+
 	prenode.Head.WrapAllHtml("<div class='node-head'> </div>")
 
 	prenode.Body.WrapAllHtml("<div class='node'> <div class='node-body'> </div> </div>")
@@ -83,6 +92,28 @@ func nodify(prenode PreNode) {
 	node.PrependSelection(prenode.Head.Parent())
 	node.SetAttr("class", fmt.Sprintf("node node-depth-%d", prenode.Depth))
 	node.SetAttr("id", fmt.Sprintf("node-%s", contentHash(node)))
+}
+
+// nodifyListItem is a special case handler for lists
+// An <li> is a special kind of node in the sense that:
+//	1. its head is the first text node of the li, requires digging deeper from
+//	   goquery tools to html.Node.
+//	2. its head is not an immediate child of body, violating the big assumption.
+func nodifyListItem(liNode *html.Node) {
+	if liNode.FirstChild.Type != html.TextNode {
+		return
+	}
+	headSel := goquery.Selection{Nodes: []*html.Node{liNode.FirstChild}}
+	headSel.WrapHtml("<span class='node-head'></span>")
+
+	var bodyNodes []*html.Node
+	curNode := liNode.FirstChild.NextSibling
+	for curNode != nil {
+		bodyNodes = append(bodyNodes, curNode)
+		curNode = curNode.NextSibling
+	}
+	bodySel := goquery.Selection{Nodes: bodyNodes}
+	bodySel.WrapHtml("<div class='node-body'></span>")
 }
 
 // treeify recursively traverses the DOM and performs a sequence of in-place
@@ -144,11 +175,11 @@ func findNextHead(curHead *goquery.Selection) *goquery.Selection {
 }
 
 func contentHash(node *goquery.Selection) string {
-	html, err := goquery.OuterHtml(node)
+	htmlStr, err := goquery.OuterHtml(node)
 	if err != nil {
 		log.Fatal(err)
 	}
-	hash := md5.Sum([]byte(html))
+	hash := md5.Sum([]byte(htmlStr))
 	contentId := hex.EncodeToString(hash[:])[:8]
 	return string(contentId)
 }

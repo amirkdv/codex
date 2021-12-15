@@ -64,7 +64,8 @@ class Codex {
   }
 
   initFileLabels() {
-    $('.node').each((idx, elem) => {
+    $('div.node').each((idx, elem) => {
+      // only for div nodes, not li nodes
       const $elem = $(elem);
       const fname = $elem.attr('codex-source');
       const mtime = (new Date($elem.attr('codex-mtime'))).toLocaleString();

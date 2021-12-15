@@ -21,10 +21,10 @@ var (
 )
 
 type Server struct {
-	Codex   *Codex
-	Addr    string // whatever http.Listen() accepts
+	Codex *Codex
+	Addr  string // whatever http.Listen() accepts
 
-	watcher *fsnotify.Watcher
+	watcher    *fsnotify.Watcher
 	websockets []*websocket.Conn
 }
 

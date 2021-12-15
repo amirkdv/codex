@@ -74,7 +74,7 @@ func TempSourceFile(extension string, content string) string {
 }
 
 func selText(sel *goquery.Selection) string {
-	return strings.Trim(sel.Text(), " ")
+	return strings.TrimSpace(sel.Text())
 }
 
 func selCount(sel *goquery.Selection, selector string) int {

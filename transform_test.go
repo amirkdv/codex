@@ -39,6 +39,32 @@ func Test_H1_p(t *testing.T) {
 	assert.Equal(t, "Hello World", selText(doc.Find(".node-depth-1 .node-body").Last()))
 }
 
+func Test_H1_p_ul(t *testing.T) {
+	//    H1
+	//   /  \
+	//  p    ul
+	//      /  \
+	//	   li   li
+	fname := TempSourceFile("md", `
+        # H1
+
+        Hello World
+
+        * Li1
+          * nested li's don't matter
+        * Li2
+        `)
+	doc := _codexTransform([]string{fname})
+	defer os.Remove(fname)
+
+	assert.Equal(t, 5, doc.Find(".node").Length())
+	assert.Equal(t, 1, doc.Find(".node-depth-0").Length())
+	assert.Equal(t, 2, doc.Find(".node-depth-1").Length())
+	assert.Equal(t, 2, doc.Find(".node-depth-2").Length())
+
+	assert.Equal(t, "Li1", selText(doc.Find(".node-depth-2 > .node-head").First()))
+}
+
 func Test_H2_p_p(t *testing.T) {
 	// gist:
 	//  - H2 still gets depth 0 because codex depths are relative
