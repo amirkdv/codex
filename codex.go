@@ -11,8 +11,9 @@ import (
 )
 
 type Codex struct {
-	Inputs []*Codocument
-	output *goquery.Document
+	Inputs     []*Codocument
+	outputDoc  *goquery.Document
+	outputHtml string
 }
 
 func RootDir() string {
@@ -81,10 +82,11 @@ func (cdx *Codex) Build() error {
 	outDoc.Find("main").First().SetHtml(buffer.String())
 	outDoc.Find(".node:not(:has(.node))").AddClass("node-leaf")
 
-	cdx.output = outDoc
+	cdx.outputDoc = outDoc
+	cdx.outputHtml = DocToHtml(cdx.outputDoc)
 	return nil
 }
 
 func (cdx *Codex) Output() string {
-	return DocToHtml(cdx.output)
+	return cdx.outputHtml
 }
