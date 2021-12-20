@@ -166,6 +166,7 @@ pre > code {
   /* pandoc weirdly puts all contents of <pre> inside a <code>, we don't want an
    * extra padding there, otherwise only first line appears indented. */
   padding: 2px 0px;
+  white-space: pre; /* see default <code> white-space too */
 }
 blockquote {
   background: #fafafa;
