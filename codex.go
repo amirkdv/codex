@@ -10,12 +10,17 @@ import (
 	"path"
 )
 
+const (
+	parallelism = 2
+)
+
 // Codex holds the context for a single instance of the codex app.
 // It's intended to be instantiated only once, using CLI arguments.
 type Codex struct {
-	Inputs		[]*Document
-	outputDoc	*goquery.Document
-	outputHtml	string
+	Inputs         []Document
+	buildSemaphore chan int
+	outputDoc      *goquery.Document
+	outputHtml     string
 }
 
 func RootDir() string {
@@ -30,11 +35,15 @@ func NewCodex(paths []string) (*Codex, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("Need at least one input")
 	}
-	codocs := make([]*Document, len(paths))
+	codocs := make([]Document, len(paths))
 	for idx, path_ := range paths {
-		codocs[idx] = &Document{Path: path_}
+		codocs[idx] = Document{Path: path_}
 	}
-	return &Codex{Inputs: codocs}, nil
+	cdx := Codex{
+		Inputs:         codocs,
+		buildSemaphore: make(chan int, parallelism),
+	}
+	return &cdx, nil
 }
 
 func (cdx *Codex) TransformAll() ([]*goquery.Document, error) {
@@ -46,7 +55,7 @@ func (cdx *Codex) TransformAll() ([]*goquery.Document, error) {
 		idx := idx
 		codoc := codoc
 		errg.Go(func() error {
-			doc, err := codoc.Transform()
+			doc, err := cdx.Transform(codoc)
 			if err != nil {
 				return err
 			}

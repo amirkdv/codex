@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// A Codex document corresponds to a path on disk containing some sort of
+// A Codex document (a codoc) corresponds to a path containing some sort of
 // markup/down, any format supported by pandoc. Formats are infered from file
 // extension by pandoc, with markdown as fallback default.
 type Document struct {
@@ -28,8 +28,13 @@ func (codoc Document) Mtime() time.Time {
 	return mtime
 }
 
-// FIXME document side effect -> pandoc subprocess
-func (codoc Document) ToHtml() (*goquery.Document, error) {
+// FIXME move closer to Codex
+func (cdx *Codex) Convert(codoc Document) (*goquery.Document, error) {
+	cdx.buildSemaphore <- 1 // up the semaphore, blocks until channel has space
+	defer func() {
+		<-cdx.buildSemaphore // down the semaphore
+	}()
+
 	cmd := exec.Command("pandoc", "-t", "html", codoc.Path)
 
 	stdout, err := cmd.StdoutPipe()
@@ -63,8 +68,9 @@ func (codoc Document) ToHtml() (*goquery.Document, error) {
 }
 
 // FIXME document side effect: pandoc subprocess. Refactor?
-func (codoc Document) Transform() (*goquery.Document, error) {
-	htmlDoc, err := codoc.ToHtml()
+// FIXME move closer to Codex
+func (cdx *Codex) Transform(codoc Document) (*goquery.Document, error) {
+	htmlDoc, err := cdx.Convert(codoc)
 	if err != nil {
 		return nil, err
 	}
