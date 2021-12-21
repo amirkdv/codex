@@ -16,7 +16,7 @@ func _codexTransform(paths []string) *goquery.Document {
 	if err := cdx.Build(); err != nil {
 		log.Fatal(err)
 	}
-	return cdx.output
+	return cdx.outputDoc
 }
 
 func Test_H1_p(t *testing.T) {

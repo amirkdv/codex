@@ -5,14 +5,25 @@ import (
 	"errors"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/sync/errgroup"
+	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path"
+	"syscall"
+	"time"
 )
 
 const (
-	parallelism = 2
+	parallelism = 2 // TODO CLI arg
 )
+
+// A Codex document (a codoc) corresponds to a path containing some sort of
+// markup/down, any format supported by pandoc. Formats are infered from file
+// extension by pandoc, with markdown as fallback default.
+type Document struct {
+	Path string
+}
 
 // Codex holds the context for a single instance of the codex app.
 // It's intended to be instantiated only once, using CLI arguments.
@@ -46,6 +57,16 @@ func NewCodex(paths []string) (*Codex, error) {
 	return &cdx, nil
 }
 
+func (codoc Document) Mtime() time.Time {
+	fileinfo, err := os.Stat(codoc.Path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	stat := fileinfo.Sys().(*syscall.Stat_t)
+	mtime := time.Unix(stat.Mtim.Sec, stat.Mtim.Nsec)
+	return mtime
+}
+
 func (cdx *Codex) TransformAll() ([]*goquery.Document, error) {
 	htmlDocs := make([]*goquery.Document, len(cdx.Inputs))
 
@@ -70,7 +91,6 @@ func (cdx *Codex) TransformAll() ([]*goquery.Document, error) {
 }
 
 func (cdx *Codex) Build() error {
-	// FIXME race
 	docs, err := cdx.TransformAll()
 	if err != nil {
 		return err
@@ -91,11 +111,69 @@ func (cdx *Codex) Build() error {
 		buffer.WriteString(html)
 	}
 	outDoc.Find("main").First().SetHtml(buffer.String())
+
 	outDoc.Find(".node:not(:has(.node))").AddClass("node-leaf")
 
 	cdx.outputDoc = outDoc
 	cdx.outputHtml = DocToHtml(cdx.outputDoc)
 	return nil
+}
+
+func (cdx *Codex) Convert(codoc Document) (*goquery.Document, error) {
+	cdx.buildSemaphore <- 1 // up the semaphore, blocks until channel has space
+	defer func() {
+		log.Println("<<", codoc.Path)
+		<-cdx.buildSemaphore // down the semaphore
+	}()
+
+	log.Println(">>", codoc.Path)
+	cmd := exec.Command("pandoc", "-t", "html", codoc.Path)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	htmlDoc, err := goquery.NewDocumentFromReader(stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	errMsg, err := io.ReadAll(stderr)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cmd.Wait(); err != nil {
+		return nil, errors.New(string(errMsg))
+	}
+
+	return htmlDoc, nil
+}
+
+func (cdx *Codex) Transform(codoc Document) (*goquery.Document, error) {
+	htmlDoc, err := cdx.Convert(codoc)
+	if err != nil {
+		return nil, err
+	}
+
+	Treeify(htmlDoc)
+
+	htmlDoc.Find(".node").Each(func(i int, sel *goquery.Selection) {
+		sel.SetAttr("codex-source", codoc.Path)
+		// render mtime in ISO 8601 (RFC 3339), compatible with JS Date().
+		sel.SetAttr("codex-mtime", codoc.Mtime().Format(time.RFC3339))
+	})
+
+	return htmlDoc, nil
 }
 
 func (cdx *Codex) Output() string {
