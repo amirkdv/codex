@@ -10,10 +10,12 @@ import (
 	"path"
 )
 
+// Codex holds the context for a single instance of the codex app.
+// It's intended to be instantiated only once, using CLI arguments.
 type Codex struct {
-	Inputs     []*Codocument
-	outputDoc  *goquery.Document
-	outputHtml string
+	Inputs		[]*Document
+	outputDoc	*goquery.Document
+	outputHtml	string
 }
 
 func RootDir() string {
@@ -28,9 +30,9 @@ func NewCodex(paths []string) (*Codex, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("Need at least one input")
 	}
-	codocs := make([]*Codocument, len(paths))
+	codocs := make([]*Document, len(paths))
 	for idx, path_ := range paths {
-		codocs[idx] = &Codocument{Path: path_}
+		codocs[idx] = &Document{Path: path_}
 	}
 	return &Codex{Inputs: codocs}, nil
 }

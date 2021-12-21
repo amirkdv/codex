@@ -11,14 +11,14 @@ import (
 	"time"
 )
 
-// Codocument is a Codex document. It corresponds to a path on disk containing
-// some sort of markup/down, any format supported by pandoc. Formats are
-// infered from file extension by pandoc.
-type Codocument struct {
+// A Codex document corresponds to a path on disk containing some sort of
+// markup/down, any format supported by pandoc. Formats are infered from file
+// extension by pandoc, with markdown as fallback default.
+type Document struct {
 	Path string
 }
 
-func (codoc Codocument) Mtime() time.Time {
+func (codoc Document) Mtime() time.Time {
 	fileinfo, err := os.Stat(codoc.Path)
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +28,8 @@ func (codoc Codocument) Mtime() time.Time {
 	return mtime
 }
 
-func (codoc Codocument) ToHtml() (*goquery.Document, error) {
+// FIXME document side effect -> pandoc subprocess
+func (codoc Document) ToHtml() (*goquery.Document, error) {
 	cmd := exec.Command("pandoc", "-t", "html", codoc.Path)
 
 	stdout, err := cmd.StdoutPipe()
@@ -61,7 +62,8 @@ func (codoc Codocument) ToHtml() (*goquery.Document, error) {
 	return htmlDoc, nil
 }
 
-func (codoc Codocument) Transform() (*goquery.Document, error) {
+// FIXME document side effect: pandoc subprocess. Refactor?
+func (codoc Document) Transform() (*goquery.Document, error) {
 	htmlDoc, err := codoc.ToHtml()
 	if err != nil {
 		return nil, err
