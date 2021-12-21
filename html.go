@@ -7,7 +7,15 @@ import (
 	"strings"
 )
 
-func SelectionToHtml(sel *goquery.Selection) string {
+func InnerHtml(sel *goquery.Selection) string {
+	html, err := sel.Html()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return html
+}
+
+func OuterHtml(sel *goquery.Selection) string {
 	html, err := goquery.OuterHtml(sel)
 	if err != nil {
 		log.Fatal(err)

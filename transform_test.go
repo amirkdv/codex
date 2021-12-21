@@ -9,14 +9,14 @@ import (
 )
 
 func _codexTransform(paths []string) *goquery.Document {
-	cdx, err := NewCodex(paths)
+	cdx, err := NewCodex(paths, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if err := cdx.Build(); err != nil {
 		log.Fatal(err)
 	}
-	return cdx.outputDoc
+	return cdx.HtmlDoc
 }
 
 func Test_H1_p(t *testing.T) {

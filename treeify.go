@@ -49,7 +49,7 @@ func rankOfHead(head *goquery.Selection) int {
 			return i
 		}
 	}
-	log.Fatal("unexpected head", SelectionToHtml(head))
+	log.Fatal("unexpected head", OuterHtml(head))
 	return -1
 }
 

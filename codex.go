@@ -1,181 +1,137 @@
 package main
 
 import (
-	"bytes"
 	"errors"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/sync/errgroup"
-	"io"
 	"log"
-	"os"
-	"os/exec"
-	"path"
-	"syscall"
-	"time"
 )
 
 const (
-	parallelism = 2 // TODO CLI arg
+	PandocConcurrency = 3 // maximum number of pandoc subprocesses
 )
-
-// A Codex document (a codoc) corresponds to a path containing some sort of
-// markup/down, any format supported by pandoc. Formats are infered from file
-// extension by pandoc, with markdown as fallback default.
-type Document struct {
-	Path string
-}
 
 // Codex holds the context for a single instance of the codex app.
 // It's intended to be instantiated only once, using CLI arguments.
 type Codex struct {
-	Inputs         []Document
-	buildSemaphore chan int
-	outputDoc      *goquery.Document
-	outputHtml     string
-}
+	Inputs  map[string]*Document
+	HtmlDoc *goquery.Document
+	HtmlStr string
 
-func RootDir() string {
-	exe, err := os.Executable()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return path.Dir(exe)
+	pandocPool *PandocPool
 }
 
 func NewCodex(paths []string) (*Codex, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("Need at least one input")
 	}
-	codocs := make([]Document, len(paths))
-	for idx, path_ := range paths {
-		codocs[idx] = Document{Path: path_}
+
+	codocs := make(map[string]*Document)
+	for _, filePath := range paths {
+		codocs[filePath] = NewDocument(filePath)
 	}
+
 	cdx := Codex{
-		Inputs:         codocs,
-		buildSemaphore: make(chan int, parallelism),
+		Inputs:     codocs,
+		pandocPool: NewPandocPool(PandocConcurrency),
 	}
+
+	doc, err := cdx.DOMSkeleton()
+	if err != nil {
+		return nil, err
+	}
+	cdx.HtmlDoc = doc
+
+	log.Println("Starting with", len(cdx.Inputs), "input document(s)")
+	if err := cdx.BuildAll(); err != nil {
+		return nil, err
+	}
+	log.Println("Finished building from", len(cdx.Inputs), "docs")
+
 	return &cdx, nil
 }
 
-func (codoc Document) Mtime() time.Time {
-	fileinfo, err := os.Stat(codoc.Path)
+// DOMSkeleton loads the codex HTML template and creates stand-in
+// <article> elements in <main> for each of the input Documents.
+//    <html> ... <body>
+//      <main>
+//        <article codex-source="example.md" ...> </article>
+//        <article codex-source="other.rst" ...> </article>
+//        ...
+//      </main>
+//    </body> </html>
+func (cdx *Codex) DOMSkeleton() (*goquery.Document, error) {
+	doc, err := LoadHtml(CodexOutputTemplate)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	stat := fileinfo.Sys().(*syscall.Stat_t)
-	mtime := time.Unix(stat.Mtim.Sec, stat.Mtim.Nsec)
-	return mtime
+
+	main := doc.Find("main")
+
+	for _, codoc := range cdx.Inputs {
+		main.AppendHtml(fmt.Sprintf(`<article codex-source="%s"/>`, codoc.Path))
+	}
+	return doc, nil
 }
 
-func (cdx *Codex) TransformAll() ([]*goquery.Document, error) {
-	htmlDocs := make([]*goquery.Document, len(cdx.Inputs))
+// CurrentDOMArticle returns a goquery Selection containing the current DOM
+// <article> corresponding to the given input Document.
+func (cdx *Codex) CurrentDOMArticle(codoc *Document) *goquery.Selection {
+	selector := fmt.Sprintf(`article[codex-source="%s"]`, codoc.Path)
+	article := cdx.HtmlDoc.Find(selector)
+	if article.Length() == 0 {
+		log.Fatal(errors.New(fmt.Sprintf("Unexpected input doc: %s", codoc.Path)))
+	}
+	return article
+}
 
+// Update rebuilds the specified document and updates its DOM <article>.
+func (cdx *Codex) Update(codoc *Document) (string, error) {
+	article := cdx.CurrentDOMArticle(codoc)
+	innerHtml, err := cdx.Transform(codoc)
+	if err != nil {
+		return "", err
+	}
+	article.SetHtml(innerHtml)
+	article.SetAttr("codex-mtime", ToIso8601(codoc.Mtime))
+	cdx.HtmlStr = DocToHtml(cdx.HtmlDoc)
+	return OuterHtml(article), nil
+}
+
+// Transform takes an input Document and returns it as codex HTML.
+func (cdx *Codex) Transform(codoc *Document) (string, error) {
+	codoc.CheckMtime()
+	codoc.SetBtime()
+
+	htmlDoc, err := cdx.pandocPool.Run(codoc.Path)
+	if err != nil {
+		return "", err
+	}
+	Treeify(htmlDoc)
+	return InnerHtml(htmlDoc.Find("body")), nil
+}
+
+func (cdx *Codex) BuildAll() error {
 	var errg errgroup.Group
-	for idx, codoc := range cdx.Inputs {
-		// because closure around goroutine below
-		idx := idx
-		codoc := codoc
+	for _, codoc := range cdx.Inputs {
+		codoc := codoc // because closure below
 		errg.Go(func() error {
-			doc, err := cdx.Transform(codoc)
+			_, err := cdx.Update(codoc)
 			if err != nil {
 				return err
 			}
-			htmlDocs[idx] = doc
 			return nil
 		})
 	}
 	if err := errg.Wait(); err != nil {
-		return nil, err
-	}
-	return htmlDocs, nil
-}
-
-func (cdx *Codex) Build() error {
-	docs, err := cdx.TransformAll()
-	if err != nil {
 		return err
 	}
 
-	outDoc, err := LoadHtml(CodexOutputTemplate)
-	if err != nil {
-		return err
-	}
-
-	var buffer bytes.Buffer
-
-	for _, doc := range docs {
-		html, err := doc.Find("body").First().Html()
-		if err != nil {
-			return err
-		}
-		buffer.WriteString(html)
-	}
-	outDoc.Find("main").First().SetHtml(buffer.String())
-
-	outDoc.Find(".node:not(:has(.node))").AddClass("node-leaf")
-
-	cdx.outputDoc = outDoc
-	cdx.outputHtml = DocToHtml(cdx.outputDoc)
+	cdx.HtmlStr = DocToHtml(cdx.HtmlDoc)
 	return nil
 }
 
-func (cdx *Codex) Convert(codoc Document) (*goquery.Document, error) {
-	cdx.buildSemaphore <- 1 // up the semaphore, blocks until channel has space
-	defer func() {
-		log.Println("<<", codoc.Path)
-		<-cdx.buildSemaphore // down the semaphore
-	}()
-
-	log.Println(">>", codoc.Path)
-	cmd := exec.Command("pandoc", "-t", "html", codoc.Path)
-
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, err
-	}
-
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	htmlDoc, err := goquery.NewDocumentFromReader(stdout)
-	if err != nil {
-		return nil, err
-	}
-
-	errMsg, err := io.ReadAll(stderr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = cmd.Wait(); err != nil {
-		return nil, errors.New(string(errMsg))
-	}
-
-	return htmlDoc, nil
-}
-
-func (cdx *Codex) Transform(codoc Document) (*goquery.Document, error) {
-	htmlDoc, err := cdx.Convert(codoc)
-	if err != nil {
-		return nil, err
-	}
-
-	Treeify(htmlDoc)
-
-	htmlDoc.Find(".node").Each(func(i int, sel *goquery.Selection) {
-		sel.SetAttr("codex-source", codoc.Path)
-		// render mtime in ISO 8601 (RFC 3339), compatible with JS Date().
-		sel.SetAttr("codex-mtime", codoc.Mtime().Format(time.RFC3339))
-	})
-
-	return htmlDoc, nil
-}
-
-func (cdx *Codex) Output() string {
-	return cdx.outputHtml
+func (cdx *Codex) Html() string {
+	return cdx.HtmlStr
 }

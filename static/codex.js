@@ -14,8 +14,10 @@ const debounce = (wait, func) => {
 
 class Codex {
   constructor(root) {
+    this.addFullScreenButtons();
     this.initSearch();
-    this.initFileLabels();
+
+    this.initFileLabels($('main'));
     this.initHighlighting();
     this.initHeadToggle();
     this.initFullScreen();
@@ -23,6 +25,7 @@ class Codex {
   }
 
   addFullScreenButtons() {
+    $('.node:not(:has(.node))').addClass('node-leaf')
     $('.node').each((idx, elem) => {
       $(elem).append(`<div class="full-screen-button"> ⤢ </div>`);
     });
@@ -63,12 +66,13 @@ class Codex {
     }));
   }
 
-  initFileLabels() {
-    $('div.node').each((idx, elem) => {
+  initFileLabels($container) {
+    $container.find('div.node').each((idx, elem) => {
       // only for div nodes, not li nodes
       const $elem = $(elem);
-      const fname = $elem.attr('codex-source');
-      const mtime = (new Date($elem.attr('codex-mtime'))).toLocaleString();
+      const $article = $elem.closest('article[codex-source]'); // an article ~ an input doc
+      const fname = $article.attr('codex-source');
+      const mtime = (new Date($article.attr('codex-mtime'))).toLocaleString();
       const $label = $(`<div class="source-file-label"> ${fname} (last updated: ${mtime}) </div>`);
       $elem.children('.node-head').prepend($label);
     });
@@ -146,18 +150,25 @@ class Codex {
   initWebSocket() {
     this.websocket = new WebSocket(`ws://${document.location.host}/ws`);
     this.websocket.onmessage = async (msg) => {
-      // assumes msg body is whole page html, extract main and replace in place
-
+      // assumes msg is html for an <article>, note: article ~ input doc
       const data = await msg.data;
       const text = (typeof data === 'string') ? data : await data.text();
-
-      const parser = new DOMParser();
-      const $newDoc = $(parser.parseFromString(text, 'text/html'));
-      $('main').html($newDoc.find('main').html());
-
-      this.addFullScreenButtons()
-      this.initSearch()
+      this.onServerUpdate(text);
+      console.log(text);
     }
+  }
+
+  onServerUpdate(html) {
+    const parser = new DOMParser();
+    const $newDoc = $(parser.parseFromString(html, 'text/html'));
+    const $article = $newDoc.find('article');
+
+    const codexSource = $article.attr('codex-source');
+    $(`main article[codex-source="${codexSource}"]`).replaceWith($article);
+
+    this.addFullScreenButtons();
+    this.initSearch();
+    this.initFileLabels($article);
   }
 }
 

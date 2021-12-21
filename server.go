@@ -20,89 +20,115 @@ var (
 	}
 )
 
+// Server is responsible for all long-running aspects of Codex:
+//  - watching files for changes
+//  - rebuilding DOM as pieces of it change,
+//  - serving contents and static files over HTTP
+//  - managing WebSocket connections for incremental updates.
+//
+// Concurrency model:
+//  1. The first build on codex boot consumes all inputs in parallel, upto a
+//     maximum concurrency level, see Codex.BuildAll()
+//  2. Each subsequent build is triggered by a single file change, incremental
+//     builds are always serialized; no two updates happen concurrently.
 type Server struct {
 	Codex *Codex
 	Addr  string // whatever http.Listen() accepts
 
-	watcher    *fsnotify.Watcher
+	watcher *fsnotify.Watcher
+	status  map[string]string
+
+	updates chan *Document
+	builds  chan *Document
+
 	websockets []*websocket.Conn
 }
 
 func NewServer(paths []string, addr string) *Server {
-	codex, err := NewCodex(paths)
+	cdx, err := NewCodex(paths)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	watcher, err := fsnotify.NewWatcher()
+	watcher, err := createWatcher(cdx.Inputs)
 	if err != nil {
 		log.Fatal(err)
-	}
-	for _, codoc := range codex.Inputs {
-		if err = watcher.Add(codoc.Path); err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	return &Server{
-		Codex:   codex,
+		Codex:   cdx,
 		Addr:    addr,
 		watcher: watcher,
+		status:  make(map[string]string),
+		updates: make(chan *Document),
+		builds:  make(chan *Document),
 	}
 }
 
-func (srv *Server) Start() {
-	log.Println("Starting with", len(srv.Codex.Inputs), "input document(s)")
-	if err := srv.Codex.Build(); err != nil {
-		log.Fatal(err)
+func createWatcher(codocs map[string]*Document) (*fsnotify.Watcher, error) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return nil, err
 	}
-	log.Println("Finished building from", len(srv.Codex.Inputs), "docs")
+	for _, codoc := range codocs {
+		if err := watcher.Add(codoc.Path); err != nil {
+			return nil, err
+		}
+	}
+	return watcher, nil
+}
 
+func (srv *Server) Start() {
 	go srv.Watch()
+	go srv.UpdateOnChange()
 	go srv.Serve()
 	select {}
 }
 
 func (srv *Server) Watch() {
 	log.Println("Watching", len(srv.Codex.Inputs), "docs for changes ...")
-	debouncer := time.NewTimer(debounceWait)
 	for {
 		select {
 		case event, ok := <-srv.watcher.Events:
 			if !ok {
-				return
+				log.Fatal("filesystem watcher crash!")
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				// don't actually trigger the event handler, just set the timer
-				log.Println(event.Name, "changed: triggering rebuild ...")
-				debouncer.Reset(debounceWait)
+				srv.updates <- srv.Codex.Inputs[event.Name]
 			}
 		case err, ok := <-srv.watcher.Errors:
 			if !ok {
-				return
+				log.Fatal("filesystem watcher crash!")
 			}
 			log.Println("watch error:", err)
-		case <-debouncer.C:
-			// caution: the current debouncer assumes all inputs are reparsed on
-			// any file change, regardless of which file. If this is optimized,
-			// the debouncer needs to be more sophisticated.
-			srv.OnFileChange()
 		}
 	}
 }
 
-func (srv *Server) OnFileChange() {
-	if err := srv.Codex.Build(); err != nil {
-		log.Fatal(err)
+func (srv *Server) UpdateOnChange() {
+	for {
+		select {
+		case codoc := <-srv.updates:
+			time.AfterFunc(debounceWait, func() {
+				srv.builds <- codoc
+			})
+		case codoc := <-srv.builds:
+			if codoc.CheckMtime().After(codoc.Btime) {
+				log.Println("building:", codoc.Path)
+				htmlStr, err := srv.Codex.Update(codoc)
+				if err != nil {
+					log.Fatal(err)
+				}
+				srv.UpdateClients(htmlStr)
+			}
+		}
 	}
-	log.Println("Finished rebuilding")
+}
 
-	html := srv.Codex.Output()
-
-	// update clients
+func (srv *Server) UpdateClients(htmlStr string) {
 	for idx, ws := range srv.websockets {
 		log.Println("Updating", len(srv.websockets), "websocket(s)")
-		if err := ws.WriteMessage(websocket.TextMessage, []byte(html)); err != nil {
+		if err := ws.WriteMessage(websocket.TextMessage, []byte(htmlStr)); err != nil {
 			log.Println("Failed to write to websocket,", err)
 			srv.dropWebSocket(idx)
 		}
@@ -125,7 +151,7 @@ func (srv *Server) Serve() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, srv.Codex.Output())
+		fmt.Fprintf(w, srv.Codex.Html())
 	})
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)

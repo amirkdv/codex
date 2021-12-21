@@ -175,6 +175,5 @@ input files.
 
 ## To Do
 
-* On file change, only rebuild the difference, not the whole tree.
 * Support markdown embedded LaTeX through pandoc.
 * Support watching folders.
