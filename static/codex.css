@@ -228,10 +228,11 @@ li.node > .node-head {
     content: "•";
     color: #888;
 }
-.node.collapsed > .node-head::before {
+.node.collapsed > .node-head::before,
+.node.headless.collapsed > .node-head::before {
     content: "▸";
 }
-.node-head:has(.dummy-node-head-hr)::before {
+.node.headless > .node-head::before {
     content: "";
 }
 li.node .node-body,
@@ -288,6 +289,10 @@ div.node {
 }
 .d-none {
   display: none;
+}
+
+.node-body > p {
+  margin-left: 0.5rem;
 }
 
 /******** Tables ******/

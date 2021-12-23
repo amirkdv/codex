@@ -177,7 +177,6 @@ class Codex {
       const data = await msg.data;
       const text = (typeof data === 'string') ? data : await data.text();
       this.onServerUpdate(text);
-      console.log(text);
     }
   }
 

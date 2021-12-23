@@ -102,6 +102,8 @@ func nodify(prenode PreNode) *goquery.Selection {
 //	2. its head is not an immediate child of body, violating the big assumption.
 func nodifyListItem(liNode *html.Node) {
 	if liNode.FirstChild.Type != html.TextNode {
+		// typically this happens for ElementType, cf stdlib's html/node.go
+		// nodifying li's that start with elements, eg <p>, requires a refactor
 		return
 	}
 	headSel := goquery.Selection{Nodes: []*html.Node{liNode.FirstChild}}
