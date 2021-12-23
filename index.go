@@ -13,6 +13,8 @@ const CodexOutputTemplate = `
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"> </script>
   <script src="https://unpkg.com/lunr@2.3.9/lunr.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter&family=Ubuntu+Mono&display=swap" rel="stylesheet">
 
   <script src="static/codex.js"></script>

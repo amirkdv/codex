@@ -196,6 +196,9 @@ class Codex {
     this.addFullScreenButtons();
     this.initSearch();
     this.renderLastUpdated($article);
+
+    // tell MathJax to look for unprocessed math and typeset it
+    MathJax.typeset();
   }
 }
 

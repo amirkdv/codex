@@ -175,5 +175,4 @@ input files.
 
 ## To Do
 
-* Support markdown embedded LaTeX through pandoc.
 * Support watching folders.
