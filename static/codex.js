@@ -79,14 +79,19 @@ class Codex {
       this.renderLastUpdated($article);
     });
 
-    $('main').on('mouseenter', '.node', (event) => {
+    $('main').on('mouseenter', '.node', event => {
       const $article = $(event.target).closest('article[codex-source]');
       this.navForArticle($article).find('.file-name').addClass('bold');
     });
 
-    $('main').on('mouseleave', '.node', (event) => {
+    $('main').on('mouseleave', '.node', event => {
       const $article = $(event.target).closest('article[codex-source]');
       this.navForArticle($article).find('.file-name').removeClass('bold');
+    });
+
+    $('.nav-file').on('click', event => {
+      const fname = $(event.target).closest('.nav-file').attr('codex-source');
+      $(`article[codex-source="${fname}"]`)[0].scrollIntoView();
     });
   }
 

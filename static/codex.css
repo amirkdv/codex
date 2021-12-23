@@ -48,6 +48,7 @@ nav #files {
 
 .nav-file {
   margin-top: 1rem;
+  cursor: pointer;
 }
 .nav-file .last-updated {
   color: #888;
