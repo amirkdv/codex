@@ -22,8 +22,10 @@ const CodexOutputTemplate = `
 
 <body>
   <div id="top-bar">
-    <input id="search-input" type="text" placeholder="search" autocomplete=off name="search-input" size="20">
-    <label for="search-input"> <!-- used by codex.js --> </label>
+	<div id="search">
+		<input type="text" placeholder="search" autocomplete=off name="search-input" size="20">
+		<label for="search-input"> <!-- used by codex.js --> </label>
+	</div>
   </div>
 
   <main>

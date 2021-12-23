@@ -45,7 +45,12 @@ mark {
   border-bottom: 4px solid #bfeaf3;
 }
 
-#top-bar #search-input {
+#top-bar #search {
+  position: absolute;
+  right: 5em;
+}
+
+#top-bar #search input {
   display: block;
 
   padding: 0.3rem;

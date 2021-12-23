@@ -42,10 +42,10 @@ class Codex {
       });
     })
 
-    $('#search-input').on('keyup', debounce(400, event => {
+    $('#search input').on('keyup', debounce(400, event => {
       if (event.target.value == '') {
         $('.node').removeClass('d-none')
-        $('label[for="search-input"]').text('');
+        $('#search label').text('');
         return;
       }
       $('.node').addClass('d-none');
