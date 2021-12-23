@@ -68,7 +68,7 @@ func rankOfHead(head *goquery.Selection) int {
 //          <p> Hello World </p>
 //        </node-body>
 //      </node>
-func nodify(prenode PreNode) {
+func nodify(prenode PreNode) *goquery.Selection {
 	var node *goquery.Selection
 
 	if prenode.Body.Length() == 0 {
@@ -92,6 +92,7 @@ func nodify(prenode PreNode) {
 	node.PrependSelection(prenode.Head.Parent())
 	node.SetAttr("class", fmt.Sprintf("node node-depth-%d", prenode.Depth))
 	node.SetAttr("id", fmt.Sprintf("node-%s", contentHash(node)))
+	return node
 }
 
 // nodifyListItem is a special case handler for lists
@@ -158,12 +159,13 @@ func treeify(root *goquery.Selection, depth int) {
 
 func treeifyWithoutHeads(root *goquery.Selection, depth int) {
 	root.Children().Each(func(i int, child *goquery.Selection) {
-		child.BeforeHtml("<hr>")
-		nodify(PreNode{
+		child.BeforeHtml("<div/>")
+		node := nodify(PreNode{
 			Head:  child.Prev(),
 			Body:  child,
 			Depth: depth,
 		})
+		node.AddClass("headless")
 	})
 }
 

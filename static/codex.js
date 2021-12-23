@@ -17,9 +17,9 @@ class Codex {
     this.addFullScreenButtons();
     this.initSearch();
 
-    this.initFileLabels($('main'));
+    this.initNav();
     this.initHighlighting();
-    this.initHeadToggle();
+    this.initFolding();
     this.initFullScreen();
     this.initWebSocket();
   }
@@ -66,16 +66,39 @@ class Codex {
     }));
   }
 
-  initFileLabels($container) {
-    $container.find('div.node').each((idx, elem) => {
-      // only for div nodes, not li nodes
-      const $elem = $(elem);
-      const $article = $elem.closest('article[codex-source]'); // an article ~ an input doc
+  initNav() {
+    $('main article[codex-source]').each((idx, elem) => {
+      const $article = $(elem);
       const fname = $article.attr('codex-source');
-      const mtime = (new Date($article.attr('codex-mtime'))).toLocaleString();
-      const $label = $(`<div class="source-file-label"> ${fname} (last updated: ${mtime}) </div>`);
-      $elem.children('.node-head').prepend($label);
+      $('nav #files').append(`
+        <div class="nav-file" codex-source="${fname}">
+          <div class="file-name"> ${fname} </div>
+          <div class="last-updated"> <!-- popualted later --> </div>
+        </div>
+      `);
+      this.renderLastUpdated($article);
     });
+
+    $('main').on('mouseenter', '.node', (event) => {
+      const $article = $(event.target).closest('article[codex-source]');
+      this.navForArticle($article).find('.file-name').addClass('bold');
+    });
+
+    $('main').on('mouseleave', '.node', (event) => {
+      const $article = $(event.target).closest('article[codex-source]');
+      this.navForArticle($article).find('.file-name').removeClass('bold');
+    });
+  }
+
+  navForArticle($article) {
+    const fname = $article.attr('codex-source');
+    return $(`#files .nav-file[codex-source="${fname}"]`)
+  }
+
+  renderLastUpdated($article) {
+    const fname = $article.attr('codex-source');
+    const mtime = (new Date($article.attr('codex-mtime'))).toLocaleString();
+    $(`nav #files div[codex-source="${fname}"] .last-updated`).html(mtime);
   }
 
   initHighlighting() {
@@ -94,8 +117,8 @@ class Codex {
     });
   }
 
-  initHeadToggle() {
-    $('body').on('click', '.node-head', event => {
+  initFolding() {
+    $('main').on('click', '.node-head', event => {
       if (event.target.tagName == 'A') {
         return;
       }
@@ -168,7 +191,7 @@ class Codex {
 
     this.addFullScreenButtons();
     this.initSearch();
-    this.initFileLabels($article);
+    this.renderLastUpdated($article);
   }
 }
 

@@ -13,7 +13,7 @@ const CodexOutputTemplate = `
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"> </script>
   <script src="https://unpkg.com/lunr@2.3.9/lunr.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter&family=Ubuntu+Mono&display=swap" rel="stylesheet">
 
   <script src="static/codex.js"></script>
   <link rel="stylesheet" href="static/pandoc.css"/>
@@ -21,12 +21,16 @@ const CodexOutputTemplate = `
 </head>
 
 <body>
-  <div id="top-bar">
+  <nav>
 	<div id="search">
 		<input type="text" placeholder="search" autocomplete=off name="search-input" size="20">
 		<label for="search-input"> <!-- used by codex.js --> </label>
 	</div>
-  </div>
+
+	<div id="files">
+		<!-- codex file navigation -->
+	</div>
+  </nav>
 
   <main>
     <!-- codex contents -->

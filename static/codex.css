@@ -1,38 +1,58 @@
+:root {
+  --monospace-font: 'Ubuntu Mono', monospace;
+  --main-font: 'Inter', sans-serif;
+  --nav-width: 210px;
+  --main-color: #3d3d3d;
+}
+
 body {
   width: 90vw;
   max-width: 70rem;
   margin: 3em auto;
 
-  color: #3d3d3d;
+  color: var(--main-color);
 
-  font-family: 'Ubuntu Mono', monospace;
-  line-height: 1.25;
+  font-family: var(--main-font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+pre, code {
+  font-family: var(--monospace-font);
 }
 
 main {
-  margin-top: 5rem;
+  margin-left: var(--nav-width);
+  width: 90vw;
+  max-width: 800px;
 }
 
-#top-bar {
+/******* File Navigation ******/
+nav {
   position: fixed;
   left: 0;
   top: 0;
-  width: 100vw;
+
   padding: 1em;
-  background: white;
-  z-index: 10;
+  width: var(--nav-width);
+  height: 100vh;
+
+  background: #fafafa;
 }
 
-/****** File labels *****/
-.source-file-label {
+nav #files {
+  margin-top: 5em;
+  font-family: var(--monospace-font);
+  font-size: 1rem;
+}
+
+.nav-file {
+  margin-top: 1rem;
+}
+.nav-file .last-updated {
   color: #888;
-  visibility: hidden;
-  font-size: 0.875rem;
-}
-
-.node-depth-0 > .node-head > .source-file-label,
-.node:hover > .node-head > .source-file-label {
-  visibility: visible;
+  font-size: 12px;
+  font-family: var(--monospace-font);
 }
 
 /******** Search ********/
@@ -45,12 +65,7 @@ mark {
   border-bottom: 4px solid #bfeaf3;
 }
 
-#top-bar #search {
-  position: absolute;
-  right: 5em;
-}
-
-#top-bar #search input {
+#search input {
   display: block;
 
   padding: 0.3rem;
@@ -58,8 +73,10 @@ mark {
   border: 1px solid #aaa;
   border-radius: 3px;
 
+  width: 12rem;
   font-size: 0.875rem;
 }
+
 #search-input + label {
   color: #666;
   padding-left: 0.1rem;
@@ -183,44 +200,89 @@ blockquote {
 
 
 /****** Nodes ******/
-div.node {
+.node {
   /* styling only applies to div nodes, not li nodes */
   position: relative;
-
-  margin-bottom: 1rem;
+}
+li.node {
   padding: 5px 25px 5px 10px;
-
-  border-right: 1px solid #e3e3e3;
-  border-left: 1px solid #e3e3e3;
-  border-radius: 5px;
+  list-style: none;
 }
 .node-head:hover {
   background: #fafafa;
   cursor: pointer;
 }
-.node.collapsed .node-head {
-  color: #888;
-}
 .node-head {
   position: relative;
   border-radius: 5px;
-  padding: 0.5em;
+  padding: 0.2rem;
 }
 li.node > .node-head {
-  padding: 0.1em;
+  padding: 0.1rem;
+  margin-left: -4px;
 }
 .node-head hr {
   border: 1px solid #f3f3f3;
 }
-.node-body {
-  padding-left: 12px;
-  font-size: 1.1rem;
+.node > .node-head::before {
+    content: "•";
+    color: #888;
 }
-.node.node-depth-1 { margin-left: 15px; }
-.node.node-depth-2 { margin-left: 18px; }
-.node.node-depth-3 { margin-left: 21px; }
-.node.node-depth-4 { margin-left: 24px; }
+.node.collapsed > .node-head::before {
+    content: "▸";
+}
+.node-head:has(.dummy-node-head-hr)::before {
+    content: "";
+}
+li.node .node-body,
+.node.headless .node-body {
+  border-left: 1px solid #e3e3e3;
+}
+.node.headless > .node-body {
+  margin-left: 8px;
+}
 
+.bold {
+  font-weight: bold;
+}
+
+.node-head h1,
+.node-head h2,
+.node-head h3,
+.node-head h4,
+.node-head h5,
+.node-head h6 {
+  display: inline;
+  margin: 0.25rem 0;
+}
+
+div.node-depth-0 > .node-head * { color: #555; font-size: 18px; }
+div.node-depth-1 > .node-head * { color: #555; font-size: 15px; }
+div.node-depth-2 > .node-head * { color: #777; font-size: 13px; }
+div.node-depth-3 > .node-head * { color: #777; font-size: 12px; }
+div.node-depth-4 > .node-head * { color: #777; font-size: 11px; }
+div.node-depth-5 > .node-head * { color: #777; font-size: 11px; }
+div.node-depth-6 > .node-head * { color: #777; font-size: 10px; }
+
+div.node {
+  margin-top: 1em;
+}
+
+.node > .node-head > .fold-toggle {
+  position: absolute; /* relative to .node */
+  left: -1em;
+  top: .25rem;
+  display: none;
+  color: var(--main-color);
+}
+
+.node.collapsed > .node-head > .fold-toggle,
+.node:hover > .node-head > .fold-toggle {
+  display: block;
+}
+.node.collapsed .node-head {
+  color: #555;
+}
 .node.collapsed .node-body {
   display: none;
 }
