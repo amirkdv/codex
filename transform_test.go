@@ -9,11 +9,11 @@ import (
 )
 
 func _codexTransform(paths []string) *goquery.Document {
-	cdx, err := NewCodex(paths, 1)
+	cdx, err := NewCodex(paths)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := cdx.Build(); err != nil {
+	if err := cdx.BuildAll(); err != nil {
 		log.Fatal(err)
 	}
 	return cdx.HtmlDoc
